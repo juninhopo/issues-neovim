@@ -5,22 +5,8 @@ if vim.g.loaded_issues_neovim == 1 then
 end
 vim.g.loaded_issues_neovim = 1
 
--- Define user command to open issues-neovim
-vim.api.nvim_create_user_command("LazyVimIssues", function()
-  local issues = require("issues-neovim")
-  local current_dir = vim.fn.getcwd()
-  
-  vim.cmd(string.format(
-    "FloatermNew --height=%s --width=%s --title=%s cd %s && issues-neovim tui",
-    issues.config.ui.float.height,
-    issues.config.ui.float.width,
-    vim.fn.shellescape(issues.config.ui.float.title),
-    vim.fn.shellescape(current_dir)
-  ))
-end, {
-  desc = "Open LazyVim Issues CLI",
-  nargs = 0,
-})
+-- Load the core plugin
+local issues = require("issues-neovim")
 
 -- Define health check module (optional but recommended)
 vim.api.nvim_create_autocmd("FileType", {

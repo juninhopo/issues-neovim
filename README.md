@@ -157,7 +157,7 @@ Once installed, you can use the following commands:
 
 ### Default Keybindings
 
-- `<leader>ii` - Open the issues browser
+- `<leader>gi` - Open the issues browser
 
 ### Issue Browser Keybindings
 

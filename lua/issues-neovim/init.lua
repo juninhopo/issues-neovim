@@ -7,7 +7,7 @@ M.config = {
   -- Default keybinding settings
   keymaps = {
     -- Open issues-neovim in floating terminal
-    open = "<leader>ii",
+    open = "<leader>gi",
   },
   
   -- Default UI settings
