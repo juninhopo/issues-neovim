@@ -212,3 +212,57 @@ This will add a `<leader>Li` shortcut to open the issues CLI in Neovim's integra
 ## License
 
 ISC
+
+## GitHub Token Configuration
+
+To use the issues-neovim plugin, you need to configure a GitHub personal access token. Follow these steps:
+
+### Creating a GitHub personal access token
+
+1. Go to [github.com](https://github.com) and log in to your account
+2. Click on your avatar in the top right corner and select "Settings"
+3. In the left sidebar menu, scroll down and click on "Developer settings"
+4. Select "Personal access tokens" and then "Fine-grained tokens"
+5. Click on "Generate new token"
+6. Give your token a name (e.g., "issues-neovim")
+7. Set an expiration date for the token
+8. Under "Repository access", select the repositories you want to access
+9. Under "Permissions":
+   - For "Repository permissions":
+     - Issues: select "Read and write"
+   - For "Organization permissions":
+     - If you need to access issues in organizations, configure the appropriate permissions
+10. Click on "Generate token"
+11. **IMPORTANT**: Copy the generated token immediately, as you won't be able to see it again
+
+### Configuring the token in issues-neovim
+
+1. Add the token to your environment as a variable:
+
+```bash
+# Add to your .bashrc, .zshrc, or shell configuration file
+export GITHUB_TOKEN="your_token_here"
+```
+
+2. Or configure the token directly in Neovim by adding to your init.lua or other configuration file:
+
+```lua
+vim.g.github_token = "your_token_here"
+```
+
+3. Restart Neovim to apply the changes
+
+## Usage
+
+After configuration, you can access GitHub Issues by pressing `<leader>gi` in Neovim.
+
+## Installation
+
+1. Add the `integrations/issues-neovim.lua` file to `~/.config/nvim/lua/plugins/`
+2. Restart Neovim or run `:Lazy sync` to install the dependencies
+
+## Requirements
+
+- Neovim 0.5+
+- [vim-floaterm](https://github.com/voldikss/vim-floaterm)
+- [which-key.nvim](https://github.com/folke/which-key.nvim) (optional, but recommended)

@@ -1,4 +1,4 @@
 #!/bin/bash
 
-echo "Testando o comando issues-neovim..."
-issues-neovim --version || echo "Comando falhou" 
+echo "Testing the issues-neovim command..."
+issues-neovim --version || echo "Command failed" 
