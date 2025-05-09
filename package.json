@@ -1,14 +1,16 @@
 {
   "name": "issues-cli",
   "version": "1.0.0",
-  "description": "CLI para gerenciar issues do GitHub para LazyVim",
+  "description": "CLI to manage GitHub issues for LazyVim",
   "main": "src/index.js",
   "bin": {
-    "issue-lazyvim": "./src/index.js"
+    "issue-lazyvim": "./src/index.js",
+    "gh-rate-limit": "./src/check-rate-limit.js"
   },
   "scripts": {
     "start": "node src/index.js",
     "tui": "node src/index.js tui",
+    "check-limits": "node src/check-rate-limit.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

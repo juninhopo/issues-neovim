@@ -9,36 +9,36 @@ const simpleGit = require('simple-git');
 const path = require('path');
 const fs = require('fs');
 
-// Estado do repositório
+// Repository state
 let OWNER = 'LazyVim';
 let REPO = 'LazyVim';
 let repoDetected = false;
 
-// Função para detectar o repositório atual
+// Function to detect current repository
 async function detectRepository() {
   try {
     const git = simpleGit(process.cwd());
     
-    // Verificar se estamos em um repositório git
+    // Check if we're in a git repository
     const isRepo = await git.checkIsRepo();
     if (!isRepo) {
-      console.log(chalk.yellow('Aviso: Não estamos em um repositório Git. Usando o repositório padrão (LazyVim/LazyVim).'));
+      console.log(chalk.yellow('Warning: Not in a Git repository. Using default repository (LazyVim/LazyVim).'));
       return false;
     }
     
-    // Obter a URL remota
+    // Get remote URL
     const remotes = await git.getRemotes(true);
     if (!remotes || remotes.length === 0) {
-      console.log(chalk.yellow('Aviso: Não há remotes configurados. Usando o repositório padrão (LazyVim/LazyVim).'));
+      console.log(chalk.yellow('Warning: No remotes configured. Using default repository (LazyVim/LazyVim).'));
       return false;
     }
     
-    // Procurar pelo remote origin ou o primeiro disponível
+    // Look for origin remote or the first available
     const remote = remotes.find(r => r.name === 'origin') || remotes[0];
     const url = remote.refs.fetch;
     
-    // Extrair owner e repo da URL do GitHub
-    // Suporta formatos https://github.com/owner/repo.git e git@github.com:owner/repo.git
+    // Extract owner and repo from GitHub URL
+    // Supports formats https://github.com/owner/repo.git and git@github.com:owner/repo.git
     let match;
     if (url.includes('github.com')) {
       if (url.startsWith('https')) {
@@ -50,30 +50,30 @@ async function detectRepository() {
       if (match && match.length >= 3) {
         OWNER = match[1];
         REPO = match[2];
-        console.log(chalk.green(`Repositório detectado: ${OWNER}/${REPO}`));
+        console.log(chalk.green(`Repository detected: ${OWNER}/${REPO}`));
         return true;
       }
     }
     
-    console.log(chalk.yellow(`Aviso: Não foi possível extrair informações do GitHub da URL: ${url}`));
-    console.log(chalk.yellow('Usando o repositório padrão (LazyVim/LazyVim).'));
+    console.log(chalk.yellow(`Warning: Couldn't extract GitHub info from URL: ${url}`));
+    console.log(chalk.yellow('Using default repository (LazyVim/LazyVim).'));
     return false;
   } catch (error) {
-    console.log(chalk.yellow(`Aviso: Erro ao detectar repositório: ${error.message}`));
-    console.log(chalk.yellow('Usando o repositório padrão (LazyVim/LazyVim).'));
+    console.log(chalk.yellow(`Warning: Error detecting repository: ${error.message}`));
+    console.log(chalk.yellow('Using default repository (LazyVim/LazyVim).'));
     return false;
   }
 }
 
-// Configuração da versão e descrição do CLI
+// CLI version and description configuration
 program
   .name('issue-lazyvim')
-  .description('CLI para gerenciar issues do GitHub')
+  .description('CLI for managing GitHub issues')
   .version('1.0.0');
 
-// Função para inicializar a API do GitHub
+// Function to initialize GitHub API
 async function initOctokit(requireAuth = false) {
-  // Verifica se o token existe
+  // Check if token exists
   let token = process.env.GITHUB_TOKEN;
   
   if (!token && requireAuth) {
@@ -81,279 +81,343 @@ async function initOctokit(requireAuth = false) {
       {
         type: 'password',
         name: 'token',
-        message: 'Digite seu token de acesso pessoal do GitHub:',
-        validate: input => input.length > 0 ? true : 'Token é obrigatório para esta operação'
+        message: 'Enter your GitHub personal access token:',
+        validate: input => input.length > 0 ? true : 'Token is required for this operation'
       }
     ]);
     token = response.token;
-    console.log(chalk.yellow('Dica: Para evitar digitar o token toda vez, configure a variável GITHUB_TOKEN no seu ambiente.'));
+    console.log(chalk.yellow('Tip: To avoid entering the token every time, set the GITHUB_TOKEN environment variable.'));
   } else if (!token && !requireAuth) {
-    console.log(chalk.blue('Acessando GitHub sem autenticação. Algumas operações podem ser limitadas.'));
+    console.log(chalk.blue('Accessing GitHub without authentication. Some operations may be limited and rate limits are lower.'));
   }
   
-  return new Octokit({ auth: token || undefined });
+  return new Octokit({ 
+    auth: token || undefined,
+    request: {
+      retries: 3,
+      retryAfter: 1
+    }
+  });
 }
 
-// Comando para iniciar a interface TUI
+// Command to start the TUI
 program
   .command('tui')
-  .description('Iniciar a interface TUI (Terminal User Interface)')
+  .description('Start the TUI (Terminal User Interface)')
   .action(async () => {
-    // Detectar repositório antes de iniciar a TUI
+    // Detect repository before starting TUI
     repoDetected = await detectRepository();
-    // Carrega e inicia o módulo TUI
+    // Load and start TUI module
     require('./tui').start(OWNER, REPO);
   });
 
-// Comando para listar issues
+// Command to list issues
 program
-  .command('listar')
-  .description('Listar issues do repositório')
-  .option('-a, --abertas', 'Mostrar apenas issues abertas', true)
-  .option('-f, --fechadas', 'Mostrar apenas issues fechadas')
-  .option('-l, --limite <número>', 'Número máximo de issues para exibir', '10')
+  .command('list')
+  .description('List repository issues')
+  .option('-o, --open', 'Show only open issues', true)
+  .option('-c, --closed', 'Show only closed issues')
+  .option('-l, --limit <number>', 'Maximum number of issues to display', '10')
   .action(async (options) => {
     try {
-      // Detectar repositório
+      // Detect repository
       repoDetected = await detectRepository();
       
-      const spinner = ora('Buscando issues...').start();
+      const spinner = ora('Fetching issues...').start();
       
-      // Listar issues não requer autenticação para repositórios públicos
+      // Listing issues doesn't require authentication for public repositories
       const octokit = await initOctokit(false);
-      const state = options.fechadas ? 'closed' : 'open';
+      const state = options.closed ? 'closed' : 'open';
       
-      const { data: issues } = await octokit.rest.issues.listForRepo({
-        owner: OWNER,
-        repo: REPO,
-        state,
-        per_page: parseInt(options.limite)
-      });
-      
-      spinner.stop();
-      
-      if (issues.length === 0) {
-        console.log(chalk.yellow(`Nenhuma issue ${state === 'open' ? 'aberta' : 'fechada'} encontrada em ${OWNER}/${REPO}.`));
-        return;
+      try {
+        const { data: issues } = await octokit.rest.issues.listForRepo({
+          owner: OWNER,
+          repo: REPO,
+          state,
+          per_page: parseInt(options.limit)
+        });
+        
+        spinner.stop();
+        
+        if (issues.length === 0) {
+          console.log(chalk.yellow(`No ${state} issues found in ${OWNER}/${REPO}.`));
+          return;
+        }
+        
+        console.log(chalk.bold(`\n${state === 'open' ? 'Open' : 'Closed'} issues from ${OWNER}/${REPO}:\n`));
+        
+        issues.forEach(issue => {
+          console.log(
+            `${chalk.green('#' + issue.number)} ${chalk.white(issue.title)}`
+          );
+          console.log(`  ${chalk.blue(issue.html_url)}`);
+          console.log(`  ${chalk.gray('Created: ' + new Date(issue.created_at).toLocaleDateString())}`);
+          console.log();
+        });
+      } catch (apiError) {
+        spinner.stop();
+        if (apiError.status === 403 && apiError.message.includes('API rate limit exceeded')) {
+          console.error(chalk.red('Error: GitHub API rate limit exceeded.'));
+          console.log(chalk.yellow('Tip: Authenticate with a token to increase rate limits.'));
+          console.log(chalk.yellow('Run the command with a GitHub token:'));
+          console.log(chalk.cyan('GITHUB_TOKEN=your_token issue-lazyvim list'));
+        } else {
+          throw apiError;
+        }
       }
-      
-      console.log(chalk.bold(`\nIssues ${state === 'open' ? 'abertas' : 'fechadas'} de ${OWNER}/${REPO}:\n`));
-      
-      issues.forEach(issue => {
-        console.log(
-          `${chalk.green('#' + issue.number)} ${chalk.white(issue.title)}`
-        );
-        console.log(`  ${chalk.blue(issue.html_url)}`);
-        console.log(`  ${chalk.gray('Criado em: ' + new Date(issue.created_at).toLocaleDateString())}`);
-        console.log();
-      });
     } catch (error) {
-      console.error(chalk.red('Erro ao buscar issues:'), error.message);
+      console.error(chalk.red('Error fetching issues:'), error.message);
       process.exit(1);
     }
   });
 
-// Comando para ver detalhes de uma issue
+// Command to view issue details
 program
-  .command('ver <número>')
-  .description('Ver detalhes de uma issue específica')
-  .action(async (número) => {
+  .command('view <number>')
+  .description('View details of a specific issue')
+  .action(async (number) => {
     try {
-      // Detectar repositório
+      // Detect repository
       repoDetected = await detectRepository();
       
-      const spinner = ora('Buscando detalhes da issue...').start();
+      const spinner = ora('Fetching issue details...').start();
       
-      // Ver detalhes não requer autenticação para repositórios públicos
+      // Viewing details doesn't require authentication for public repositories
       const octokit = await initOctokit(false);
       
       const { data: issue } = await octokit.rest.issues.get({
         owner: OWNER,
         repo: REPO,
-        issue_number: parseInt(número)
+        issue_number: parseInt(number)
       });
       
       spinner.stop();
       
       console.log(chalk.bold.green(`\n#${issue.number}: ${issue.title}\n`));
-      console.log(`${chalk.blue('Repositório:')} ${OWNER}/${REPO}`);
+      console.log(`${chalk.blue('Repository:')} ${OWNER}/${REPO}`);
       console.log(`${chalk.blue('URL:')} ${issue.html_url}`);
-      console.log(`${chalk.blue('Estado:')} ${issue.state === 'open' ? chalk.green('Aberta') : chalk.red('Fechada')}`);
-      console.log(`${chalk.blue('Criado em:')} ${new Date(issue.created_at).toLocaleString()}`);
-      console.log(`${chalk.blue('Criado por:')} ${issue.user.login}`);
+      console.log(`${chalk.blue('State:')} ${issue.state === 'open' ? chalk.green('Open') : chalk.red('Closed')}`);
+      console.log(`${chalk.blue('Created:')} ${new Date(issue.created_at).toLocaleString()}`);
+      console.log(`${chalk.blue('Created by:')} ${issue.user.login}`);
       
       if (issue.labels.length > 0) {
         console.log(`${chalk.blue('Labels:')} ${issue.labels.map(label => label.name).join(', ')}`);
       }
       
-      console.log(`\n${chalk.blue('Descrição:')}\n${issue.body || 'Sem descrição'}\n`);
+      console.log(`\n${chalk.blue('Description:')}\n${issue.body || 'No description'}\n`);
       
     } catch (error) {
-      console.error(chalk.red('Erro ao buscar detalhes da issue:'), error.message);
+      console.error(chalk.red('Error fetching issue details:'), error.message);
       process.exit(1);
     }
   });
 
-// Comando para criar uma nova issue
+// Command to create a new issue
 program
-  .command('criar')
-  .description('Criar uma nova issue no repositório')
+  .command('create')
+  .description('Create a new issue in the repository')
   .action(async () => {
     try {
-      // Detectar repositório
+      // Detect repository
       repoDetected = await detectRepository();
       
-      // Criar issues requer autenticação
+      // Creating issues requires authentication
       const octokit = await initOctokit(true);
       
       const answers = await inquirer.prompt([
         {
           type: 'input',
-          name: 'titulo',
-          message: 'Título da issue:',
-          validate: input => input.length > 0 ? true : 'Título é obrigatório'
+          name: 'title',
+          message: 'Issue title:',
+          validate: input => input.length > 0 ? true : 'Title is required'
         },
         {
           type: 'editor',
-          name: 'descricao',
-          message: 'Descrição da issue (um editor será aberto):',
+          name: 'description',
+          message: 'Issue description (an editor will open):',
         },
         {
           type: 'confirm',
-          name: 'confirmar',
-          message: `Confirmar criação da issue em ${OWNER}/${REPO}?`,
+          name: 'confirm',
+          message: `Confirm creation of issue in ${OWNER}/${REPO}?`,
           default: true
         }
       ]);
       
-      if (!answers.confirmar) {
-        console.log(chalk.yellow('Criação da issue cancelada.'));
+      if (!answers.confirm) {
+        console.log(chalk.yellow('Issue creation cancelled.'));
         return;
       }
       
-      const spinner = ora('Criando issue...').start();
+      const spinner = ora('Creating issue...').start();
       
-      const { data: novaIssue } = await octokit.rest.issues.create({
+      const { data: newIssue } = await octokit.rest.issues.create({
         owner: OWNER,
         repo: REPO,
-        title: answers.titulo,
-        body: answers.descricao || ''
+        title: answers.title,
+        body: answers.description || ''
       });
       
       spinner.stop();
       
-      console.log(chalk.green(`\nIssue #${novaIssue.number} criada com sucesso em ${OWNER}/${REPO}!`));
-      console.log(`URL: ${chalk.blue(novaIssue.html_url)}\n`);
+      console.log(chalk.green(`\nIssue #${newIssue.number} created successfully in ${OWNER}/${REPO}!`));
+      console.log(`URL: ${chalk.blue(newIssue.html_url)}\n`);
       
     } catch (error) {
-      console.error(chalk.red('Erro ao criar issue:'), error.message);
+      console.error(chalk.red('Error creating issue:'), error.message);
       process.exit(1);
     }
   });
 
-// Comando para comentar em uma issue
+// Command to comment on an issue
 program
-  .command('comentar <número>')
-  .description('Adicionar um comentário a uma issue')
-  .action(async (número) => {
+  .command('comment <number>')
+  .description('Add a comment to an issue')
+  .action(async (number) => {
     try {
-      // Detectar repositório
+      // Detect repository
       repoDetected = await detectRepository();
       
-      // Comentar requer autenticação
+      // Commenting requires authentication
       const octokit = await initOctokit(true);
       
       const answers = await inquirer.prompt([
         {
           type: 'editor',
-          name: 'comentario',
-          message: 'Digite seu comentário (um editor será aberto):',
-          validate: input => input.length > 0 ? true : 'O comentário não pode estar vazio'
+          name: 'comment',
+          message: 'Enter your comment (an editor will open):',
+          validate: input => input.length > 0 ? true : 'Comment cannot be empty'
         },
         {
           type: 'confirm',
-          name: 'confirmar',
-          message: `Confirmar envio do comentário na issue #${número} de ${OWNER}/${REPO}?`,
+          name: 'confirm',
+          message: `Confirm posting comment on issue #${number} in ${OWNER}/${REPO}?`,
           default: true
         }
       ]);
       
-      if (!answers.confirmar) {
-        console.log(chalk.yellow('Envio do comentário cancelado.'));
+      if (!answers.confirm) {
+        console.log(chalk.yellow('Comment posting cancelled.'));
         return;
       }
       
-      const spinner = ora('Enviando comentário...').start();
+      const spinner = ora('Posting comment...').start();
       
       await octokit.rest.issues.createComment({
         owner: OWNER,
         repo: REPO,
-        issue_number: parseInt(número),
-        body: answers.comentario
+        issue_number: parseInt(number),
+        body: answers.comment
       });
       
       spinner.stop();
       
-      console.log(chalk.green(`\nComentário adicionado com sucesso na issue #${número} de ${OWNER}/${REPO}!`));
+      console.log(chalk.green(`\nComment added successfully to issue #${number} in ${OWNER}/${REPO}!`));
       
     } catch (error) {
-      console.error(chalk.red('Erro ao adicionar comentário:'), error.message);
+      console.error(chalk.red('Error adding comment:'), error.message);
       process.exit(1);
     }
   });
 
-// Comando para buscar issues
+// Command to search issues
 program
-  .command('buscar <termo>')
-  .description('Buscar issues por termo')
-  .action(async (termo) => {
+  .command('search <term>')
+  .description('Search issues by term')
+  .action(async (term) => {
     try {
-      // Detectar repositório
+      // Detect repository
       repoDetected = await detectRepository();
       
-      const spinner = ora('Buscando issues...').start();
+      const spinner = ora('Searching issues...').start();
       
-      // Buscar issues não requer autenticação para repositórios públicos
+      // Searching issues doesn't require authentication for public repositories
       const octokit = await initOctokit(false);
       
-      const { data: resultados } = await octokit.rest.search.issuesAndPullRequests({
-        q: `repo:${OWNER}/${REPO} ${termo} in:title,body`,
+      const { data: results } = await octokit.rest.search.issuesAndPullRequests({
+        q: `repo:${OWNER}/${REPO} ${term} in:title,body`,
       });
       
       spinner.stop();
       
-      if (resultados.items.length === 0) {
-        console.log(chalk.yellow(`Nenhuma issue encontrada com o termo "${termo}" em ${OWNER}/${REPO}.`));
+      if (results.items.length === 0) {
+        console.log(chalk.yellow(`No issues found with term "${term}" in ${OWNER}/${REPO}.`));
         return;
       }
       
-      console.log(chalk.bold(`\nResultados da busca por "${termo}" em ${OWNER}/${REPO} (${resultados.total_count} encontrados):\n`));
+      console.log(chalk.bold(`\nSearch results for "${term}" in ${OWNER}/${REPO} (${results.total_count} found):\n`));
       
-      resultados.items.slice(0, 10).forEach(issue => {
+      results.items.slice(0, 10).forEach(issue => {
         console.log(
           `${chalk.green('#' + issue.number)} ${chalk.white(issue.title)}`
         );
         console.log(`  ${chalk.blue(issue.html_url)}`);
-        console.log(`  ${chalk.gray('Estado: ' + (issue.state === 'open' ? 'Aberto' : 'Fechado'))}`);
+        console.log(`  ${chalk.gray('State: ' + (issue.state === 'open' ? 'Open' : 'Closed'))}`);
         console.log();
       });
       
-      if (resultados.total_count > 10) {
-        console.log(chalk.yellow(`...e mais ${resultados.total_count - 10} resultados não exibidos.`));
+      if (results.total_count > 10) {
+        console.log(chalk.yellow(`...and ${results.total_count - 10} more results not shown.`));
       }
       
     } catch (error) {
-      console.error(chalk.red('Erro ao buscar issues:'), error.message);
+      console.error(chalk.red('Error searching issues:'), error.message);
       process.exit(1);
     }
   });
 
-// Analisar argumentos da linha de comando
+// Define command aliases
+program
+  .command('listar', { hidden: true })
+  .description('Alias for list command')
+  .option('-a, --abertas', 'Alias for --open', true)
+  .option('-f, --fechadas', 'Alias for --closed')
+  .option('-l, --limite <number>', 'Alias for --limit', '10')
+  .action(async (options) => {
+    // Map the Portuguese options to English options
+    const englishOptions = {
+      open: options.abertas,
+      closed: options.fechadas,
+      limit: options.limite
+    };
+    // Call the original list command
+    await program.commands.find(cmd => cmd.name() === 'list').action(englishOptions);
+  });
+
+program
+  .command('ver', { hidden: true })
+  .description('Alias for view command')
+  .action((number) => {
+    program.commands.find(cmd => cmd.name() === 'view').action(number);
+  });
+
+program
+  .command('criar', { hidden: true })
+  .description('Alias for create command')
+  .action(() => {
+    program.commands.find(cmd => cmd.name() === 'create').action();
+  });
+
+program
+  .command('comentar', { hidden: true })
+  .description('Alias for comment command')
+  .action((number) => {
+    program.commands.find(cmd => cmd.name() === 'comment').action(number);
+  });
+
+program
+  .command('buscar', { hidden: true })
+  .description('Alias for search command')
+  .action((term) => {
+    program.commands.find(cmd => cmd.name() === 'search').action(term);
+  });
+
+// Parse command line arguments
 program.parse(process.argv);
 
-// Se nenhum comando for fornecido, iniciar a TUI por padrão
+// If no command is provided, start the TUI by default
 if (!process.argv.slice(2).length) {
-  // Detectar repositório antes de iniciar a TUI
+  // Detect repository before starting TUI
   detectRepository().then((detected) => {
     repoDetected = detected;
     require('./tui').start(OWNER, REPO);

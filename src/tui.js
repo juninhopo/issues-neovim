@@ -5,7 +5,7 @@ const contrib = require('blessed-contrib');
 const { Octokit } = require('octokit');
 const chalk = require('chalk');
 
-// Estado global da aplicação
+// Global application state
 const state = {
   issues: [],
   selectedIssue: null,
@@ -15,15 +15,15 @@ const state = {
   error: null,
   page: 1,
   perPage: 30,
-  issueState: 'open', // 'open' ou 'closed'
+  issueState: 'open', // 'open' or 'closed'
   searchTerm: '',
   view: 'issues', // 'issues', 'details', 'create', 'comment'
-  needsAuth: true, // Adicione esta linha
-  owner: 'LazyVim', // Valor padrão
-  repo: 'LazyVim'   // Valor padrão
+  needsAuth: true,
+  owner: 'issues-vim', // Default value
+  repo: 'issues-vim'   // Default value
 };
 
-// Inicializa a tela
+// Initialize the screen
 const screen = blessed.screen({
   smartCSR: true,
   title: 'GitHub Issues CLI',
@@ -34,7 +34,7 @@ const screen = blessed.screen({
 // Layout principal usando grid
 const grid = new contrib.grid({ rows: 12, cols: 12, screen: screen });
 
-// Componentes da interface
+// Interface components
 const header = grid.set(0, 0, 1, 12, blessed.box, {
   content: ' {bold}GitHub Issues CLI{/bold} ',
   tags: true,
@@ -62,7 +62,7 @@ const tabs = grid.set(1, 0, 1, 12, blessed.listbar, {
     },
   },
   commands: {
-    'Issues Abertas': {
+    'Open Issues': {
       keys: ['1'],
       callback: () => {
         state.issueState = 'open';
@@ -70,7 +70,7 @@ const tabs = grid.set(1, 0, 1, 12, blessed.listbar, {
         refreshIssues();
       },
     },
-    'Issues Fechadas': {
+    'Closed Issues': {
       keys: ['2'],
       callback: () => {
         state.issueState = 'closed';
@@ -78,15 +78,19 @@ const tabs = grid.set(1, 0, 1, 12, blessed.listbar, {
         refreshIssues();
       },
     },
-    'Buscar': {
+    'Search': {
       keys: ['3'],
       callback: promptSearch,
     },
-    'Criar Issue': {
+    'Create Issue': {
       keys: ['4'],
       callback: promptCreateIssue,
     },
-    'Sair (q)': {
+    'API Limits': {
+      keys: ['5'],
+      callback: checkApiLimits,
+    },
+    'Exit (q)': {
       keys: ['q'],
       callback: () => process.exit(0),
     },
@@ -118,8 +122,8 @@ const issuesList = grid.set(2, 0, 8, 4, blessed.list, {
 });
 
 const issueDetails = grid.set(2, 4, 8, 8, blessed.box, {
-  label: ' Detalhes da Issue ',
-  content: 'Selecione uma issue para ver os detalhes',
+  label: ' Issue Details ',
+  content: 'Select an issue to view details',
   tags: true,
   border: {
     type: 'line',
@@ -140,7 +144,7 @@ const issueDetails = grid.set(2, 4, 8, 8, blessed.box, {
 });
 
 const statusBar = grid.set(10, 0, 1, 12, blessed.text, {
-  content: ' Carregando...',
+  content: ' Loading...',
   tags: true,
   style: {
     fg: 'white',
@@ -149,7 +153,7 @@ const statusBar = grid.set(10, 0, 1, 12, blessed.text, {
 });
 
 const helpBar = grid.set(11, 0, 1, 12, blessed.text, {
-  content: ' {bold}↑/↓{/bold}: Navegar  {bold}Enter{/bold}: Ver Detalhes  {bold}c{/bold}: Comentar  {bold}r{/bold}: Recarregar  {bold}q{/bold}: Sair',
+  content: ' {bold}↑/↓{/bold}: Navigate  {bold}Enter{/bold}: View Details  {bold}c{/bold}: Comment  {bold}r{/bold}: Refresh  {bold}5{/bold}: API Limits  {bold}q{/bold}: Exit',
   tags: true,
   style: {
     fg: 'white',
@@ -157,20 +161,20 @@ const helpBar = grid.set(11, 0, 1, 12, blessed.text, {
   },
 });
 
-// Inicializa a API do GitHub
+// Initialize GitHub API
 async function initOctokit() {
-  // Para operações apenas de leitura em repositórios públicos, o token é opcional
+  // For read-only operations on public repositories, token is optional
   if (!state.token && state.needsAuth) {
     state.token = await promptGitHubToken();
   }
   
-  // Se não precisar de autenticação ou já tiver token, retorna a instância do Octokit
+  // Return Octokit instance
   return new Octokit({ 
     auth: state.token || undefined
   });
 }
 
-// Prompt para o token do GitHub
+// Prompt for GitHub token
 function promptGitHubToken() {
   return new Promise((resolve) => {
     const prompt = blessed.prompt({
@@ -180,13 +184,13 @@ function promptGitHubToken() {
       width: 'half',
       top: 'center',
       left: 'center',
-      label: ' Token do GitHub ',
+      label: ' GitHub Token ',
       hidden: true,
       keys: true,
       vi: true,
     });
 
-    prompt.input('Digite seu token de acesso pessoal do GitHub (opcional para visualização):', '', (err, value) => {
+    prompt.input('Enter your GitHub personal access token (optional for viewing):', '', (err, value) => {
       prompt.destroy();
       screen.render();
       resolve(value);
@@ -196,14 +200,7 @@ function promptGitHubToken() {
   });
 }
 
-// Função para verificar se é necessária autenticação
-function requiresAuth(operation) {
-  // Operações de escrita sempre precisam de autenticação
-  const writeOperations = ['create', 'update', 'delete', 'comment'];
-  return writeOperations.includes(operation);
-}
-
-// Prompt para busca
+// Prompt for search
 function promptSearch() {
   const prompt = blessed.prompt({
     parent: screen,
@@ -212,12 +209,12 @@ function promptSearch() {
     width: 'half',
     top: 'center',
     left: 'center',
-    label: ' Buscar Issues ',
+    label: ' Search Issues ',
     keys: true,
     vi: true,
   });
 
-  prompt.input('Digite o termo de busca:', state.searchTerm, (err, value) => {
+  prompt.input('Enter search term:', state.searchTerm, (err, value) => {
     if (value) {
       state.searchTerm = value;
       searchIssues();
@@ -229,7 +226,7 @@ function promptSearch() {
   screen.render();
 }
 
-// Prompt para criar uma issue
+// Prompt to create issue
 function promptCreateIssue() {
   const form = blessed.form({
     parent: screen,
@@ -243,14 +240,14 @@ function promptCreateIssue() {
     border: {
       type: 'line',
     },
-    label: ' Criar Nova Issue ',
+    label: ' Create New Issue ',
   });
 
   blessed.text({
     parent: form,
     left: 1,
     top: 1,
-    content: 'Título:',
+    content: 'Title:',
   });
 
   const titleInput = blessed.textbox({
@@ -277,7 +274,7 @@ function promptCreateIssue() {
     parent: form,
     left: 1,
     top: 4,
-    content: 'Descrição:',
+    content: 'Description:',
   });
 
   const bodyInput = blessed.textarea({
@@ -303,7 +300,7 @@ function promptCreateIssue() {
   const submitButton = blessed.button({
     parent: form,
     name: 'submit',
-    content: 'Criar',
+    content: 'Create',
     left: 1,
     top: 11,
     width: 10,
@@ -322,7 +319,7 @@ function promptCreateIssue() {
   const cancelButton = blessed.button({
     parent: form,
     name: 'cancel',
-    content: 'Cancelar',
+    content: 'Cancel',
     left: 15,
     top: 11,
     width: 10,
@@ -346,7 +343,7 @@ function promptCreateIssue() {
       form.destroy();
       createIssue(title, body);
     } else {
-      showMessage('O título é obrigatório!', 'error');
+      showMessage('Title is required!', 'error');
     }
   });
 
@@ -359,10 +356,10 @@ function promptCreateIssue() {
   screen.render();
 }
 
-// Função para comentar em uma issue
+// Function to comment on issue
 function promptComment() {
   if (!state.selectedIssue) {
-    showMessage('Selecione uma issue primeiro!', 'error');
+    showMessage('Select an issue first!', 'error');
     return;
   }
 
@@ -378,14 +375,14 @@ function promptComment() {
     border: {
       type: 'line',
     },
-    label: ` Comentar na Issue #${state.selectedIssue.number} `,
+    label: ` Comment on Issue #${state.selectedIssue.number} `,
   });
 
   blessed.text({
     parent: form,
     left: 1,
     top: 1,
-    content: 'Comentário:',
+    content: 'Comment:',
   });
 
   const commentInput = blessed.textarea({
@@ -411,7 +408,7 @@ function promptComment() {
   const submitButton = blessed.button({
     parent: form,
     name: 'submit',
-    content: 'Enviar',
+    content: 'Submit',
     left: 1,
     top: 8,
     width: 10,
@@ -430,7 +427,7 @@ function promptComment() {
   const cancelButton = blessed.button({
     parent: form,
     name: 'cancel',
-    content: 'Cancelar',
+    content: 'Cancel',
     left: 15,
     top: 8,
     width: 10,
@@ -453,7 +450,7 @@ function promptComment() {
       form.destroy();
       createComment(comment);
     } else {
-      showMessage('O comentário não pode estar vazio!', 'error');
+      showMessage('Comment cannot be empty!', 'error');
     }
   });
 
@@ -466,7 +463,7 @@ function promptComment() {
   screen.render();
 }
 
-// Função para mostrar mensagens
+// Function to show messages
 function showMessage(message, type = 'info') {
   const colors = {
     info: 'blue',
@@ -495,7 +492,7 @@ function showMessage(message, type = 'info') {
   screen.render();
 }
 
-// função para atualizar o título da tela com o repositório
+// function to update the screen title with the repository
 function updateTitle() {
   const title = `GitHub Issues: ${state.owner}/${state.repo}`;
   screen.title = title;
@@ -503,30 +500,40 @@ function updateTitle() {
   screen.render();
 }
 
-// Funções para interagir com a API do GitHub
+// Functions to interact with GitHub API
 async function fetchIssues() {
   try {
     state.loading = true;
-    state.needsAuth = false; // Visualizar issues é operação de leitura
-    updateStatus(`Carregando issues ${state.issueState === 'open' ? 'abertas' : 'fechadas'}...`);
+    state.needsAuth = false; // Viewing issues is a read operation
+    updateStatus(`Loading ${state.issueState} issues...`);
     screen.render();
 
     const octokit = await initOctokit();
     
-    const { data: issues } = await octokit.rest.issues.listForRepo({
-      owner: state.owner,
-      repo: state.repo,
-      state: state.issueState,
-      per_page: state.perPage,
-      page: state.page,
-    });
+    try {
+      const { data: issues } = await octokit.rest.issues.listForRepo({
+        owner: state.owner,
+        repo: state.repo,
+        state: state.issueState,
+        per_page: state.perPage,
+        page: state.page,
+      });
 
-    state.issues = issues;
-    updateIssuesList();
-    updateStatus(`${issues.length} issues carregadas de ${state.owner}/${state.repo}`);
+      state.issues = issues;
+      updateIssuesList();
+      updateStatus(`${issues.length} issues loaded from ${state.owner}/${state.repo}`);
+    } catch (apiError) {
+      // Check if it's a rate limit error
+      if (apiError.status === 403 && apiError.message.includes('API rate limit exceeded')) {
+        state.needsAuth = true; // We need authentication to increase the limit
+        showMessage('API rate limit exceeded. Please authenticate with a GitHub token.', 'error');
+      } else {
+        throw apiError; // Propagate other errors
+      }
+    }
   } catch (error) {
     state.error = error.message;
-    updateStatus(`Erro: ${error.message}`, 'error');
+    updateStatus(`Error: ${error.message}`, 'error');
   } finally {
     state.loading = false;
     screen.render();
@@ -536,24 +543,34 @@ async function fetchIssues() {
 async function searchIssues() {
   try {
     state.loading = true;
-    state.needsAuth = false; // Buscar issues é operação de leitura
-    updateStatus(`Buscando por "${state.searchTerm}"...`);
+    state.needsAuth = false; // Searching issues is a read operation
+    updateStatus(`Searching for "${state.searchTerm}"...`);
     screen.render();
 
     const octokit = await initOctokit();
     
-    const { data: result } = await octokit.rest.search.issuesAndPullRequests({
-      q: `repo:${state.owner}/${state.repo} ${state.searchTerm} in:title,body`,
-      per_page: state.perPage,
-      page: state.page,
-    });
+    try {
+      const { data: result } = await octokit.rest.search.issuesAndPullRequests({
+        q: `repo:${state.owner}/${state.repo} ${state.searchTerm} in:title,body`,
+        per_page: state.perPage,
+        page: state.page,
+      });
 
-    state.issues = result.items;
-    updateIssuesList();
-    updateStatus(`${result.total_count} resultados encontrados para "${state.searchTerm}" em ${state.owner}/${state.repo}`);
+      state.issues = result.items;
+      updateIssuesList();
+      updateStatus(`${result.total_count} results found for "${state.searchTerm}" in ${state.owner}/${state.repo}`);
+    } catch (apiError) {
+      // Check if it's a rate limit error
+      if (apiError.status === 403 && apiError.message.includes('API rate limit exceeded')) {
+        state.needsAuth = true; // We need authentication to increase the limit
+        showMessage('API rate limit exceeded. Please authenticate with a GitHub token.', 'error');
+      } else {
+        throw apiError; // Propagate other errors
+      }
+    }
   } catch (error) {
     state.error = error.message;
-    updateStatus(`Erro: ${error.message}`, 'error');
+    updateStatus(`Error: ${error.message}`, 'error');
   } finally {
     state.loading = false;
     screen.render();
@@ -563,30 +580,40 @@ async function searchIssues() {
 async function fetchIssueDetails(issueNumber) {
   try {
     state.loading = true;
-    state.needsAuth = false; // Ver detalhes é operação de leitura
-    updateStatus(`Carregando detalhes da issue #${issueNumber}...`);
+    state.needsAuth = false; // Viewing details is a read operation
+    updateStatus(`Loading issue #${issueNumber} details...`);
     screen.render();
 
     const octokit = await initOctokit();
     
-    const { data: issue } = await octokit.rest.issues.get({
-      owner: state.owner,
-      repo: state.repo,
-      issue_number: issueNumber,
-    });
+    try {
+      const { data: issue } = await octokit.rest.issues.get({
+        owner: state.owner,
+        repo: state.repo,
+        issue_number: issueNumber,
+      });
 
-    const { data: comments } = await octokit.rest.issues.listComments({
-      owner: state.owner,
-      repo: state.repo,
-      issue_number: issueNumber,
-      per_page: 100,
-    });
+      const { data: comments } = await octokit.rest.issues.listComments({
+        owner: state.owner,
+        repo: state.repo,
+        issue_number: issueNumber,
+        per_page: 100,
+      });
 
-    updateIssueDetails(issue, comments);
-    updateStatus(`Detalhes da issue #${issueNumber} carregados de ${state.owner}/${state.repo}`);
+      updateIssueDetails(issue, comments);
+      updateStatus(`Issue #${issueNumber} details loaded from ${state.owner}/${state.repo}`);
+    } catch (apiError) {
+      // Check if it's a rate limit error
+      if (apiError.status === 403 && apiError.message.includes('API rate limit exceeded')) {
+        state.needsAuth = true; // We need authentication to increase the limit
+        showMessage('API rate limit exceeded. Please authenticate with a GitHub token.', 'error');
+      } else {
+        throw apiError; // Propagate other errors
+      }
+    }
   } catch (error) {
     state.error = error.message;
-    updateStatus(`Erro: ${error.message}`, 'error');
+    updateStatus(`Error: ${error.message}`, 'error');
   } finally {
     state.loading = false;
     screen.render();
@@ -596,14 +623,14 @@ async function fetchIssueDetails(issueNumber) {
 async function createIssue(title, body) {
   try {
     state.loading = true;
-    state.needsAuth = true; // Criar issue é operação de escrita
-    updateStatus('Criando issue...');
+    state.needsAuth = true; // Creating issue is a write operation
+    updateStatus('Creating issue...');
     screen.render();
 
     const octokit = await initOctokit();
     
     if (!state.token) {
-      showMessage('É necessário um token do GitHub para criar issues!', 'error');
+      showMessage('A GitHub token is required to create issues!', 'error');
       return;
     }
     
@@ -614,11 +641,11 @@ async function createIssue(title, body) {
       body,
     });
 
-    showMessage(`Issue #${issue.number} criada com sucesso em ${state.owner}/${state.repo}!`, 'success');
+    showMessage(`Issue #${issue.number} created successfully in ${state.owner}/${state.repo}!`, 'success');
     refreshIssues();
   } catch (error) {
     state.error = error.message;
-    updateStatus(`Erro: ${error.message}`, 'error');
+    updateStatus(`Error: ${error.message}`, 'error');
   } finally {
     state.loading = false;
     screen.render();
@@ -630,14 +657,14 @@ async function createComment(body) {
     if (!state.selectedIssue) return;
     
     state.loading = true;
-    state.needsAuth = true; // Comentar é operação de escrita
-    updateStatus(`Comentando na issue #${state.selectedIssue.number}...`);
+    state.needsAuth = true; // Commenting is a write operation
+    updateStatus(`Adding comment to issue #${state.selectedIssue.number}...`);
     screen.render();
 
     const octokit = await initOctokit();
     
     if (!state.token) {
-      showMessage('É necessário um token do GitHub para adicionar comentários!', 'error');
+      showMessage('A GitHub token is required to add comments!', 'error');
       return;
     }
     
@@ -648,18 +675,18 @@ async function createComment(body) {
       body,
     });
 
-    showMessage('Comentário adicionado com sucesso!', 'success');
+    showMessage('Comment added successfully!', 'success');
     fetchIssueDetails(state.selectedIssue.number);
   } catch (error) {
     state.error = error.message;
-    updateStatus(`Erro: ${error.message}`, 'error');
+    updateStatus(`Error: ${error.message}`, 'error');
   } finally {
     state.loading = false;
     screen.render();
   }
 }
 
-// Funções para atualizar a interface
+// Functions to update the interface
 function updateIssuesList() {
   issuesList.setItems(
     state.issues.map((issue) => {
@@ -684,29 +711,29 @@ function updateIssuesList() {
 function updateIssueDetails(issue, comments = []) {
   state.selectedIssue = issue;
 
-  const stateColor = issue.state === 'open' ? '{green-fg}Aberta{/green-fg}' : '{red-fg}Fechada{/red-fg}';
+  const stateColor = issue.state === 'open' ? '{green-fg}Open{/green-fg}' : '{red-fg}Closed{/red-fg}';
   
   let content = '';
   content += `{bold}#${issue.number}: ${issue.title}{/bold}\n\n`;
-  content += `{bold}Estado:{/bold} ${stateColor}\n`;
-  content += `{bold}Criada por:{/bold} ${issue.user.login}\n`;
-  content += `{bold}Criada em:{/bold} ${new Date(issue.created_at).toLocaleString()}\n`;
+  content += `{bold}State:{/bold} ${stateColor}\n`;
+  content += `{bold}Created by:{/bold} ${issue.user.login}\n`;
+  content += `{bold}Created:{/bold} ${new Date(issue.created_at).toLocaleString()}\n`;
   
   if (issue.labels.length > 0) {
     content += `{bold}Labels:{/bold} ${issue.labels.map((l) => l.name).join(', ')}\n`;
   }
   
-  content += `\n{bold}Descrição:{/bold}\n${issue.body || 'Sem descrição'}\n\n`;
+  content += `\n{bold}Description:{/bold}\n${issue.body || 'No description'}\n\n`;
   
   if (comments.length > 0) {
-    content += `{bold}Comentários (${comments.length}):{/bold}\n\n`;
+    content += `{bold}Comments (${comments.length}):{/bold}\n\n`;
     
     comments.forEach((comment) => {
-      content += `{bold}${comment.user.login}{/bold} em ${new Date(comment.created_at).toLocaleString()}\n`;
+      content += `{bold}${comment.user.login}{/bold} on ${new Date(comment.created_at).toLocaleString()}\n`;
       content += `${comment.body}\n\n`;
     });
   } else {
-    content += '{bold}Comentários:{/bold} Nenhum comentário ainda\n';
+    content += '{bold}Comments:{/bold} No comments yet\n';
   }
   
   issueDetails.setContent(content);
@@ -726,7 +753,7 @@ function updateStatus(message, type = 'info') {
 
 function refreshIssues() {
   state.selectedIssue = null;
-  issueDetails.setContent('Carregando...');
+  issueDetails.setContent('Loading...');
   fetchIssues();
 }
 
@@ -765,6 +792,62 @@ fetchIssues();
 
 // Habilitar o mouse
 screen.enableMouse();
+
+// Function to check API limits
+async function checkApiLimits() {
+  try {
+    state.loading = true;
+    updateStatus('Checking API rate limits...');
+    screen.render();
+
+    const octokit = await initOctokit(false);
+    
+    const { data } = await octokit.rest.rateLimit.get();
+    
+    // Calculate when the limit will be reset
+    const resetDate = new Date(data.rate.reset * 1000);
+    const now = new Date();
+    const diffMinutes = Math.round((resetDate - now) / 60000);
+    
+    let message = '\n{bold}=== GitHub API Rate Limits Status ===\n{/bold}\n';
+    
+    if (state.token) {
+      message += '{bold}Mode:{/bold} Authenticated\n';
+    } else {
+      message += '{bold}Mode:{/bold} Not authenticated\n';
+      message += '{yellow-fg}Configure a token to increase the limit from 60 to 5000 req/hour{/yellow-fg}\n';
+    }
+    
+    message += `\n{bold}Remaining requests:{/bold} ${data.rate.remaining} / ${data.rate.limit}\n`;
+    message += `{bold}Next reset:{/bold} ${resetDate.toLocaleTimeString()} (in ~${diffMinutes} minutes)\n`;
+    
+    if (data.resources) {
+      message += '\n{bold}Resource-specific limits:{/bold}\n';
+      
+      if (data.resources.core) {
+        message += `Core: ${data.resources.core.remaining} / ${data.resources.core.limit}\n`;
+      }
+      
+      if (data.resources.search) {
+        message += `Search: ${data.resources.search.remaining} / ${data.resources.search.limit}\n`;
+      }
+    }
+    
+    message += '\n{bold}Tips:{/bold}\n';
+    message += '• Unauthenticated users: 60 requests/hour\n';
+    message += '• Authenticated users: 5,000 requests/hour\n';
+    message += '• Search has a separate limit of 30 requests/minute\n';
+    
+    issueDetails.setContent(message);
+    updateStatus('GitHub API rate limits checked');
+  } catch (error) {
+    state.error = error.message;
+    updateStatus(`Error: ${error.message}`, 'error');
+  } finally {
+    state.loading = false;
+    screen.render();
+  }
+}
 
 module.exports = {
   start: (owner, repo) => {

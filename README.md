@@ -1,133 +1,172 @@
 # LazyVim Issues CLI
 
-Um CLI simples para gerenciar issues do GitHub do projeto [LazyVim](https://github.com/LazyVim/LazyVim).
+A simple CLI to manage GitHub issues for the [LazyVim](https://github.com/LazyVim/LazyVim) project.
 
-## Instalação
+## Installation
 
-Clone este repositório:
+Clone this repository:
 
 ```bash
 git clone https://github.com/juninhopo/issues-cli.git
 cd issues-cli
 ```
 
-Instale as dependências:
+Install dependencies:
 
 ```bash
 npm install
 ```
 
-Instale o CLI globalmente:
+Install the CLI globally:
 
 ```bash
 npm link
 ```
 
-## Uso
+## GitHub API Rate Limits
 
-### Interface TUI (Terminal User Interface)
+The GitHub API imposes rate limits that may affect this CLI's usage:
 
-Para iniciar a interface TUI similar ao Lazygit, você pode executar:
+- Unauthenticated users: 60 requests per hour (IP-based)
+- Authenticated users: 5,000 requests per hour
+- The search API has a separate limit of 30 requests per minute
+
+### Checking your current limits
+
+You can check your current rate limit status using:
+
+```bash
+npm run check-limits
+```
+
+or, if globally installed:
+
+```bash
+gh-rate-limit
+```
+
+In the TUI interface, you can press `5` to see current limits.
+
+### Handling rate limit errors
+
+If you receive a "Request quota exhausted" message, it means you've hit the rate limit. To resolve:
+
+1. **Authenticate with a token**: Set the `GITHUB_TOKEN` environment variable
+   ```bash
+   export GITHUB_TOKEN=your_token_here
+   ```
+
+2. **Wait for the limit reset**: The CLI will show when the limit will be reset
+
+3. **Reduce unnecessary queries**: Avoid reloading the issue list repeatedly
+
+## Usage
+
+### Terminal User Interface (TUI)
+
+To start the TUI similar to Lazygit, you can run:
 
 ```bash
 lazyvim-issues
 ```
 
-ou
+or
 
 ```bash
 lazyvim-issues tui
 ```
 
-A interface TUI permite:
-- Navegar pelas issues abertas e fechadas
-- Ver detalhes completos das issues
-- Criar novas issues
-- Adicionar comentários às issues
-- Buscar issues por termo
+The TUI allows you to:
+- Navigate open and closed issues
+- View complete issue details
+- Create new issues
+- Add comments to issues
+- Search issues by term
+- Check API rate limits
 
-#### Atalhos de teclado na TUI
-- `↑/↓`: Navegar pela lista de issues
-- `Enter`: Ver detalhes da issue selecionada
-- `Tab`: Alternar entre a lista de issues e os detalhes
-- `c`: Comentar na issue selecionada
-- `r`: Recarregar a lista de issues
-- `q`: Sair da aplicação
-- `1`: Ver issues abertas
-- `2`: Ver issues fechadas
-- `3`: Buscar issues
-- `4`: Criar uma nova issue
+#### Keyboard Shortcuts in TUI
+- `↑/↓`: Navigate through the issues list
+- `Enter`: View selected issue details
+- `Tab`: Toggle between the issues list and details
+- `c`: Comment on selected issue
+- `r`: Refresh issues list
+- `5`: Check GitHub API limits
+- `q`: Exit application
+- `1`: View open issues
+- `2`: View closed issues
+- `3`: Search issues
+- `4`: Create a new issue
 
-### Modo de linha de comando
+### Command Line Mode
 
-### Autenticação
+### Authentication
 
-Para operações somente de leitura (listar issues, ver detalhes, buscar) em repositórios públicos como o LazyVim, **não é necessário** um token de acesso do GitHub.
+For read-only operations (listing issues, viewing details, searching) in public repositories like LazyVim, **a GitHub access token is not required**.
 
-Para operações de escrita (criar issues, comentar), você precisará de um token de acesso pessoal do GitHub com permissões para issues. Você pode configurar o token como uma variável de ambiente:
-
-```bash
-export GITHUB_TOKEN=seu_token_aqui
-```
-
-Se você não configurar o token e tentar realizar uma operação que o exija, o CLI irá solicitar o token quando necessário.
-
-### Comandos disponíveis
-
-#### Listar issues
+For write operations (creating issues, commenting), you'll need a GitHub personal access token with permissions for issues. You can configure the token as an environment variable:
 
 ```bash
-lazyvim-issues listar
+export GITHUB_TOKEN=your_token_here
 ```
 
-Opções:
-- `-a, --abertas`: Listar apenas issues abertas (padrão)
-- `-f, --fechadas`: Listar apenas issues fechadas
-- `-l, --limite <número>`: Número máximo de issues a serem exibidas (padrão: 10)
+If you don't configure the token and try to perform an operation that requires it, the CLI will prompt you for the token when needed.
 
-#### Ver detalhes de uma issue
+### Available Commands
+
+#### List issues
 
 ```bash
-lazyvim-issues ver <número>
+lazyvim-issues list
 ```
 
-#### Criar uma nova issue
+Options:
+- `-o, --open`: List only open issues (default)
+- `-c, --closed`: List only closed issues
+- `-l, --limit <number>`: Maximum number of issues to display (default: 10)
+
+#### View issue details
 
 ```bash
-lazyvim-issues criar
+lazyvim-issues view <number>
 ```
 
-#### Adicionar um comentário a uma issue
+#### Create a new issue
 
 ```bash
-lazyvim-issues comentar <número>
+lazyvim-issues create
 ```
 
-#### Buscar issues por termo
+#### Add a comment to an issue
 
 ```bash
-lazyvim-issues buscar <termo>
+lazyvim-issues comment <number>
 ```
 
-## Integração com LazyVim
-
-Existem duas maneiras de integrar este CLI com o LazyVim:
-
-### 1. Integração com terminal flutuante (recomendado)
-
-Copie o arquivo de integração fornecido para o seu diretório de configuração do LazyVim:
+#### Search issues by term
 
 ```bash
-cp integrations/lazyvim-issues.lua ~/.config/nvim/lua/plugins/
+lazyvim-issues search <term>
 ```
 
-Isso adicionará:
-- Um atalho `<leader>Li` para abrir o LazyVim Issues em um terminal flutuante
-- Dependência do plugin `vim-floaterm` para criar um terminal flutuante
+## LazyVim Integration
 
-### 2. Integração com terminal integrado
+There are two ways to integrate this CLI with LazyVim:
 
-Alternativamente, você pode adicionar o seguinte ao seu arquivo de configuração:
+### 1. Floating terminal integration (recommended)
+
+Copy the provided integration file to your LazyVim configuration directory:
+
+```bash
+cp integrations/issue-lazyvim.lua ~/.config/nvim/lua/plugins/
+```
+
+This will add:
+- A `<leader>gi` shortcut to open LazyVim Issues in a floating terminal
+- Dependency on the `vim-floaterm` plugin to create a floating terminal
+
+### 2. Integrated terminal integration
+
+Alternatively, you can add the following to your configuration file:
 
 ```lua
 -- ~/.config/nvim/lua/plugins/lazyvim-issues.lua
@@ -155,20 +194,21 @@ return {
 }
 ```
 
-Isso adicionará um atalho `<leader>Li` para abrir o CLI de issues no terminal integrado do Neovim.
+This will add a `<leader>Li` shortcut to open the issues CLI in Neovim's integrated terminal.
 
-## Desenvolvimento
+## Development
 
-### Requisitos
+### Requirements
 
-- Node.js (versão 14 ou superior)
-- npm (versão 6 ou superior)
+- Node.js (version 14 or higher)
+- npm (version 6 or higher)
 
-### Scripts disponíveis
+### Available Scripts
 
-- `npm start`: Inicia a interface TUI (padrão)
-- `npm run tui`: Inicia explicitamente a interface TUI
+- `npm start`: Start the TUI interface (default)
+- `npm run tui`: Explicitly start the TUI interface
+- `npm run check-limits`: Check GitHub API rate limits
 
-## Licença
+## License
 
 ISC
