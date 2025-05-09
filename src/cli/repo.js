@@ -5,8 +5,8 @@ const simpleGit = require('simple-git');
 async function detectRepository() {
   const result = {
     detected: false,
-    owner: 'LazyVim',
-    repo: 'LazyVim'
+    owner: 'juninhopo',
+    repo: 'issues-neovim'
   };
   
   try {
@@ -15,14 +15,14 @@ async function detectRepository() {
     // Check if we're in a git repository
     const isRepo = await git.checkIsRepo();
     if (!isRepo) {
-      console.log(chalk.yellow('Warning: Not in a Git repository. Using default repository (LazyVim/LazyVim).'));
+      console.log(chalk.yellow('Warning: Not in a Git repository. Using default repository (juninhopo/issues-neovim).'));
       return result;
     }
     
     // Get remote URL
     const remotes = await git.getRemotes(true);
     if (!remotes || remotes.length === 0) {
-      console.log(chalk.yellow('Warning: No remotes configured. Using default repository (LazyVim/LazyVim).'));
+      console.log(chalk.yellow('Warning: No remotes configured. Using default repository (juninhopo/issues-neovim).'));
       return result;
     }
     
@@ -50,11 +50,11 @@ async function detectRepository() {
     }
     
     console.log(chalk.yellow(`Warning: Couldn't extract GitHub info from URL: ${url}`));
-    console.log(chalk.yellow('Using default repository (LazyVim/LazyVim).'));
+    console.log(chalk.yellow('Using default repository (juninhopo/issues-neovim).'));
     return result;
   } catch (error) {
     console.log(chalk.yellow(`Warning: Error detecting repository: ${error.message}`));
-    console.log(chalk.yellow('Using default repository (LazyVim/LazyVim).'));
+    console.log(chalk.yellow('Using default repository (juninhopo/issues-neovim).'));
     return result;
   }
 }
