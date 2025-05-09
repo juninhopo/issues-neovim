@@ -26,7 +26,7 @@ const state = {
 // Initialize the screen
 const screen = blessed.screen({
   smartCSR: true,
-  title: 'GitHub Issues CLI',
+  title: 'GitHub Issues',
   dockBorders: true,
   fullUnicode: true,
 });

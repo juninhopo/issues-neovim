@@ -4,6 +4,8 @@ A simple CLI to manage GitHub issues for the [LazyVim](https://github.com/LazyVi
 
 ## Installation
 
+### CLI Installation
+
 Clone this repository:
 
 ```bash
@@ -22,6 +24,35 @@ Install the CLI globally:
 ```bash
 npm link
 ```
+
+### Lazy.nvim Installation (for Neovim users)
+
+For Neovim users, you can easily install this plugin using [Lazy.nvim](https://github.com/folke/lazy.nvim):
+
+```lua
+-- Add to your Lazy.nvim configuration
+{
+  "juninhopo/issues-neovim",
+  dependencies = {
+    "voldikss/vim-floaterm",
+    "folke/which-key.nvim",
+  },
+  event = "VeryLazy",
+  config = true,
+  -- Optional: use a specific commit or version
+  -- commit = "main",
+  -- version = "*", -- latest stable version
+}
+```
+
+## Requirements
+
+- Node.js (version 14 or higher)
+- npm (version 6 or higher)
+- For Neovim integration:
+  - Neovim 0.5+
+  - [vim-floaterm](https://github.com/voldikss/vim-floaterm)
+  - [which-key.nvim](https://github.com/folke/which-key.nvim) (optional, but recommended)
 
 ## GitHub API Rate Limits
 
@@ -59,6 +90,45 @@ If you receive a "Request quota exhausted" message, it means you've hit the rate
 2. **Wait for the limit reset**: The CLI will show when the limit will be reset
 
 3. **Reduce unnecessary queries**: Avoid reloading the issue list repeatedly
+
+## GitHub Token Configuration
+
+To use the issues-neovim plugin, you need to configure a GitHub personal access token. Follow these steps:
+
+### Creating a GitHub personal access token
+
+1. Go to [github.com](https://github.com) and log in to your account
+2. Click on your avatar in the top right corner and select "Settings"
+3. In the left sidebar menu, scroll down and click on "Developer settings"
+4. Select "Personal access tokens" and then "Fine-grained tokens"
+5. Click on "Generate new token"
+6. Give your token a name (e.g., "issues-neovim")
+7. Set an expiration date for the token
+8. Under "Repository access", select the repositories you want to access
+9. Under "Permissions":
+   - For "Repository permissions":
+     - Issues: select "Read and write"
+   - For "Organization permissions":
+     - If you need to access issues in organizations, configure the appropriate permissions
+10. Click on "Generate token"
+11. **IMPORTANT**: Copy the generated token immediately, as you won't be able to see it again
+
+### Configuring the token in issues-neovim
+
+1. Add the token to your environment as a variable:
+
+```bash
+# Add to your .bashrc, .zshrc, or shell configuration file
+export GITHUB_TOKEN="your_token_here"
+```
+
+2. Or configure the token directly in Neovim by adding to your init.lua or other configuration file:
+
+```lua
+vim.g.github_token = "your_token_here"
+```
+
+3. Restart Neovim to apply the changes
 
 ## Usage
 
@@ -150,9 +220,51 @@ issues-neovim search <term>
 
 ## LazyVim Integration
 
-There are two ways to integrate this CLI with LazyVim:
+There are multiple ways to integrate this CLI with LazyVim:
 
-### 1. Floating terminal integration (recommended)
+### 1. Using Lazy.nvim (recommended)
+
+Add the following to your `~/.config/nvim/lua/plugins/issues-neovim.lua` file:
+
+```lua
+return {
+  {
+    "juninhopo/issues-neovim",
+    dependencies = {
+      "voldikss/vim-floaterm",
+      "folke/which-key.nvim",
+    },
+    event = "VeryLazy",
+    config = function()
+      -- Optional: Configure the keybinding
+      if require("which-key", true) then
+        require("which-key").register({
+          ["<leader>gi"] = { 
+            function()
+              local current_dir = vim.fn.getcwd()
+              vim.cmd(string.format(
+                "FloatermNew --height=0.9 --width=0.9 --title=GitHub\\ Issues cd %s && issues-neovim tui",
+                vim.fn.shellescape(current_dir)
+              ))
+            end, 
+            "GitHub Issues" 
+          },
+        })
+      end
+      
+      -- Optional: Configure the GitHub token
+      -- vim.g.github_token = "your_token_here"
+    end,
+  },
+}
+```
+
+This will:
+- Add the plugin to your Neovim setup via Lazy.nvim
+- Set up a `<leader>gi` shortcut to open LazyVim Issues in a floating terminal
+- Install the required dependencies (`vim-floaterm` and `which-key.nvim`)
+
+### 2. Manual Floating Terminal Integration
 
 Copy the provided integration file to your LazyVim configuration directory:
 
@@ -164,7 +276,7 @@ This will add:
 - A `<leader>gi` shortcut to open LazyVim Issues in a floating terminal
 - Dependency on the `vim-floaterm` plugin to create a floating terminal
 
-### 2. Integrated terminal integration
+### 3. Integrated Terminal Integration
 
 Alternatively, you can add the following to your configuration file:
 
@@ -196,12 +308,98 @@ return {
 
 This will add a `<leader>Li` shortcut to open the issues CLI in Neovim's integrated terminal.
 
+## Publishing to Lazy.nvim Ecosystem
+
+If you want to make your plugin available to other users via Lazy.nvim:
+
+1. **Ensure your repository follows the standard Neovim plugin structure:**
+   - Place the integration file at `lua/issues-neovim/init.lua`
+   - Include a proper `README.md` with installation and usage instructions
+   - Add a `plugin/issues-neovim.lua` for plugin registration
+
+2. **Create an appropriate plugin structure:**
+   ```
+   issues-neovim/
+   ├── lua/
+   │   └── issues-neovim/
+   │       ├── init.lua      # Main plugin file
+   │       └── config.lua    # Configuration options
+   ├── plugin/
+   │   └── issues-neovim.lua # Plugin registration
+   ├── README.md
+   └── LICENSE
+   ```
+
+3. **Push your repository to GitHub:**
+   ```bash
+   git remote add origin https://github.com/username/issues-neovim.git
+   git push -u origin main
+   ```
+
+4. **Tag releases for versioning:**
+   ```bash
+   git tag -a v1.0.0 -m "Initial release"
+   git push origin v1.0.0
+   ```
+
+## Advanced Configuration
+
+When using the plugin via Lazy.nvim, you can customize it by providing configuration options:
+
+```lua
+return {
+  {
+    "juninhopo/issues-neovim",
+    dependencies = {
+      "voldikss/vim-floaterm",
+      "folke/which-key.nvim",
+    },
+    opts = {
+      -- Custom keybinding (optional)
+      keymaps = {
+        open = "<leader>gi", -- Change to your preferred keybinding
+      },
+      
+      -- UI settings (optional)
+      ui = {
+        float = {
+          height = 0.9,
+          width = 0.9,
+          title = "GitHub Issues",
+        },
+      },
+      
+      -- GitHub settings (optional)
+      github = {
+        token = nil, -- Will use GITHUB_TOKEN env var if nil
+        owner = "LazyVim", -- Change to target repository owner
+        repo = "LazyVim",  -- Change to target repository name
+      },
+    },
+  },
+}
+```
+
+### Available Commands
+
+After installation, you can use:
+
+1. **Via keyboard shortcut**: Press `<leader>gi` (or your configured keybinding)
+2. **Via command**: Run `:LazyVimIssues` in Neovim
+
+### Configuration Options
+
+| Option                | Default       | Description                              |
+|-----------------------|---------------|------------------------------------------|
+| `keymaps.open`        | `<leader>gi`  | Keyboard shortcut to open the issues TUI |
+| `ui.float.height`     | `0.9`         | Floating window height (0.0-1.0)         |
+| `ui.float.width`      | `0.9`         | Floating window width (0.0-1.0)          |
+| `ui.float.title`      | `GitHub Issues` | Floating window title                   |
+| `github.token`        | `nil`         | GitHub token (uses GITHUB_TOKEN env var if nil) |
+| `github.owner`        | `LazyVim`     | GitHub repository owner                  |
+| `github.repo`         | `LazyVim`     | GitHub repository name                   |
+
 ## Development
-
-### Requirements
-
-- Node.js (version 14 or higher)
-- npm (version 6 or higher)
 
 ### Available Scripts
 
@@ -212,57 +410,3 @@ This will add a `<leader>Li` shortcut to open the issues CLI in Neovim's integra
 ## License
 
 ISC
-
-## GitHub Token Configuration
-
-To use the issues-neovim plugin, you need to configure a GitHub personal access token. Follow these steps:
-
-### Creating a GitHub personal access token
-
-1. Go to [github.com](https://github.com) and log in to your account
-2. Click on your avatar in the top right corner and select "Settings"
-3. In the left sidebar menu, scroll down and click on "Developer settings"
-4. Select "Personal access tokens" and then "Fine-grained tokens"
-5. Click on "Generate new token"
-6. Give your token a name (e.g., "issues-neovim")
-7. Set an expiration date for the token
-8. Under "Repository access", select the repositories you want to access
-9. Under "Permissions":
-   - For "Repository permissions":
-     - Issues: select "Read and write"
-   - For "Organization permissions":
-     - If you need to access issues in organizations, configure the appropriate permissions
-10. Click on "Generate token"
-11. **IMPORTANT**: Copy the generated token immediately, as you won't be able to see it again
-
-### Configuring the token in issues-neovim
-
-1. Add the token to your environment as a variable:
-
-```bash
-# Add to your .bashrc, .zshrc, or shell configuration file
-export GITHUB_TOKEN="your_token_here"
-```
-
-2. Or configure the token directly in Neovim by adding to your init.lua or other configuration file:
-
-```lua
-vim.g.github_token = "your_token_here"
-```
-
-3. Restart Neovim to apply the changes
-
-## Usage
-
-After configuration, you can access GitHub Issues by pressing `<leader>gi` in Neovim.
-
-## Installation
-
-1. Add the `integrations/issues-neovim.lua` file to `~/.config/nvim/lua/plugins/`
-2. Restart Neovim or run `:Lazy sync` to install the dependencies
-
-## Requirements
-
-- Neovim 0.5+
-- [vim-floaterm](https://github.com/voldikss/vim-floaterm)
-- [which-key.nvim](https://github.com/folke/which-key.nvim) (optional, but recommended)

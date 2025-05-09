@@ -1,6 +1,6 @@
 -- issues-neovim.lua
--- Adicione este arquivo em ~/.config/nvim/lua/plugins/
--- Isto irá registrar o comando "GitHub Issues" no menu do LazyVim
+-- Add this file to ~/.config/nvim/lua/plugins/
+-- This will register the "GitHub Issues" command in the LazyVim menu
 
 return {
   {
@@ -21,10 +21,10 @@ return {
       wk.register({
         ["<leader>gi"] = { 
           function()
-            -- Obter o diretório atual para garantir que o comando seja executado no contexto correto
+            -- Get the current directory to ensure the command is executed in the correct context
             local current_dir = vim.fn.getcwd()
             
-            -- Abrir o terminal flutuante para a interface TUI do issues-neovim
+            -- Open the floating terminal for the issues-neovim TUI interface
             vim.cmd(string.format(
               "FloatermNew --height=0.9 --width=0.9 --title=GitHub\\ Issues cd %s && issues-neovim tui",
               vim.fn.shellescape(current_dir)
