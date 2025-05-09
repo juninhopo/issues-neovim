@@ -19,8 +19,8 @@ const state = {
   searchTerm: '',
   view: 'issues', // 'issues', 'details', 'create', 'comment'
   needsAuth: true,
-  owner: 'issues-vim', // Default value
-  repo: 'issues-vim'   // Default value
+  owner: 'juninhopo', // Valor padrão atualizado
+  repo: 'issues-neovim'   // Valor padrão atualizado
 };
 
 // Initialize the screen
@@ -690,13 +690,8 @@ async function createComment(body) {
 function updateIssuesList() {
   issuesList.setItems(
     state.issues.map((issue) => {
-      let prefix = '#' + issue.number;
-      if (issue.state === 'open') {
-        prefix = '{green-fg}' + prefix + '{/green-fg}';
-      } else {
-        prefix = '{red-fg}' + prefix + '{/red-fg}';
-      }
-      return `${prefix} ${issue.title.substring(0, 40)}${issue.title.length > 40 ? '...' : ''}`;
+      let statusColor = issue.state === 'open' ? 'green-fg' : 'red-fg';
+      return `{${statusColor}}#${issue.number}{/${statusColor}} ${issue.title.substring(0, 40)}${issue.title.length > 40 ? '...' : ''}`;
     })
   );
 
@@ -747,7 +742,7 @@ function updateStatus(message, type = 'info') {
     error: '{white-fg}{red-bg}',
   };
 
-  statusBar.setContent(`${colors[type]} ${message} {/}`);
+  statusBar.setContent(`${colors[type]} ${message} {/white-fg}`);
   screen.render();
 }
 
@@ -778,7 +773,7 @@ screen.key('c', () => {
 });
 
 // Inicializar
-screen.title = 'LazyVim Issues CLI';
+screen.title = 'GitHub Issues';
 screen.key(['tab'], (ch, key) => {
   if (screen.focused.parent === issuesList.parent) {
     issueDetails.focus();
@@ -855,6 +850,8 @@ module.exports = {
       state.owner = owner;
       state.repo = repo;
       updateTitle();
+    } else {
+      updateTitle(); // Garante que o título padrão seja atualizado
     }
     screen.render();
   },
@@ -862,5 +859,6 @@ module.exports = {
 
 // Se este arquivo for executado diretamente
 if (require.main === module) {
+  updateTitle(); // Garante que o título é atualizado mesmo quando executado diretamente
   screen.render();
 } 

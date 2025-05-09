@@ -5,8 +5,8 @@ const { detectRepository } = require('./repo');
 const commands = require('./commands');
 
 // Repository state
-let OWNER = 'LazyVim';
-let REPO = 'LazyVim';
+let OWNER = 'juninhopo';
+let REPO = 'issues-neovim';
 let repoDetected = false;
 
 // CLI version and description configuration
