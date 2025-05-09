@@ -91,6 +91,21 @@ require('issues-neovim').setup({
 })
 ```
 
+### Repository Auto-detection
+
+By default, the plugin will automatically detect the GitHub repository information from your git remote URL. If you're working in a git repository with a GitHub remote, the plugin will automatically use that repository for GitHub issues.
+
+You can also specify a default repository in your configuration:
+
+```lua
+require('issues-neovim').setup({
+  github = {
+    owner = "juninhopo", -- Default repository owner
+    repo = "issues-neovim", -- Default repository name
+  }
+})
+```
+
 ### Default Configuration
 
 ```lua
@@ -138,10 +153,11 @@ Once installed, you can use the following commands:
 - `:GithubIssues` - Open the issues browser
 - `:GithubIssue <number>` - View a specific issue by number
 - `:GithubCreateIssue` - Create a new issue
+- `:GithubSetToken <token>` - Set and save your GitHub token
 
 ### Default Keybindings
 
-- `<leader>gi` - Open the issues browser
+- `<leader>ii` - Open the issues browser
 
 ### Issue Browser Keybindings
 
@@ -156,6 +172,29 @@ When in the issues browser:
 - `s` - Search issues
 - `l` - View API rate limits
 - `q` - Close the browser
+
+## Troubleshooting
+
+### Token Issues
+
+If you encounter authentication issues:
+
+1. Make sure your GitHub token is set in your environment variable:
+   ```bash
+   export GITHUB_TOKEN=your_token_here
+   ```
+
+2. Verify the token has the `repo` scope enabled.
+
+3. You can use `:GithubSetToken your_token_here` to set and save the token within Neovim.
+
+### Repository Detection Issues
+
+If the plugin can't detect your repository:
+
+1. Make sure you're in a git repository with a GitHub remote.
+2. Check your git remote URL with `git remote -v`.
+3. You can manually specify the repository in your configuration.
 
 ## License
 
