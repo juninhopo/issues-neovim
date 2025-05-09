@@ -2,6 +2,8 @@
 
 A simple Neovim plugin to manage GitHub issues for projects.
 
+![Screenshot 2025-05-09 at 01 26 18](https://github.com/user-attachments/assets/0e3f0aa6-e18d-46bf-bfb9-dda723997001)
+
 ## Installation
 
 ### Lazy.nvim Installation
