@@ -11,6 +11,7 @@
     "start": "node src/index.js",
     "tui": "node src/index.js tui",
     "check-limits": "node src/check-rate-limit.js",
+    "att-plugin": "npm link && cp integrations/issues-neovim.lua ~/.config/nvim/lua/plugins/",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -23,7 +24,7 @@
     "issues",
     "lazyvim"
   ],
-  "author": "",
+  "author": "juninhopo <kelgaxd@gmail.com>",
   "license": "ISC",
   "type": "commonjs",
   "bugs": {

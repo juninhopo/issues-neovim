@@ -4,6 +4,26 @@ A simple CLI to manage GitHub issues for the [LazyVim](https://github.com/LazyVi
 
 ## Installation
 
+### Lazy.nvim Installation (for Neovim users)
+
+For Neovim users, you can easily install this plugin using [Lazy.nvim](https://github.com/folke/lazy.nvim):
+
+```lua
+-- Add to your Lazy.nvim configuration
+{
+  "juninhopo/issues-neovim",
+  dependencies = {
+    "voldikss/vim-floaterm",
+    "folke/which-key.nvim",
+  },
+  event = "VeryLazy",
+  config = true,
+  -- Optional: use a specific commit or version
+  -- commit = "main",
+  -- version = "*", -- latest stable version
+}
+```
+
 ### CLI Installation
 
 Clone this repository:
@@ -23,26 +43,6 @@ Install the CLI globally:
 
 ```bash
 npm link
-```
-
-### Lazy.nvim Installation (for Neovim users)
-
-For Neovim users, you can easily install this plugin using [Lazy.nvim](https://github.com/folke/lazy.nvim):
-
-```lua
--- Add to your Lazy.nvim configuration
-{
-  "juninhopo/issues-neovim",
-  dependencies = {
-    "voldikss/vim-floaterm",
-    "folke/which-key.nvim",
-  },
-  event = "VeryLazy",
-  config = true,
-  -- Optional: use a specific commit or version
-  -- commit = "main",
-  -- version = "*", -- latest stable version
-}
 ```
 
 ## Requirements
