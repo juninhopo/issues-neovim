@@ -5,14 +5,12 @@
   "main": "src/index.js",
   "bin": {
     "issues-neovim": "./src/index.js",
-    "gh-rate-limit": "./src/check-rate-limit.js",
-    "issues-neovim-diagnose": "./src/diagnose.js"
+    "gh-rate-limit": "./src/check-rate-limit.js"
   },
   "scripts": {
     "start": "node src/index.js",
     "tui": "node src/index.js tui",
     "check-limits": "node src/check-rate-limit.js",
-    "diagnose": "node src/diagnose.js",
     "att-plugin": "npm link && cp integrations/issues-neovim.lua ~/.config/nvim/lua/plugins/",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -38,7 +36,6 @@
     "blessed-contrib": "^4.11.0",
     "chalk": "^4.1.2",
     "commander": "^11.1.0",
-    "debug": "^4.3.4",
     "inquirer": "^8.2.6",
     "octokit": "^3.1.2",
     "ora": "^5.4.1",

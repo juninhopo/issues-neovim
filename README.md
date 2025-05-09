@@ -24,26 +24,7 @@ For Neovim users, you can easily install this plugin using [Lazy.nvim](https://g
 }
 ```
 
-#### Installing the CLI for Lazy.nvim users
-
-When using Lazy.nvim, you'll also need to install the CLI component. The plugin will automatically detect if the CLI is missing and offer to install it for you. You can:
-
-1. **Let the plugin install it for you**: The first time you run a plugin command, it will prompt you to install the CLI
-2. **Install it manually**: Run the CLI installation command
-   ```vim
-   :LazyVimIssuesInstallCLI
-   ```
-3. **Global installation**: Install it globally via npm
-   ```bash
-   # Navigate to the plugin directory
-   cd ~/.local/share/nvim/lazy/issues-neovim
-   # Install dependencies and link globally
-   npm install && npm link
-   ```
-
 ### CLI Installation
-
-If you're manually cloning the repository (not using Lazy.nvim), follow these steps:
 
 Clone this repository:
 
@@ -61,17 +42,6 @@ npm install
 Install the CLI globally:
 
 ```bash
-npm link
-```
-
-#### CLI Not Found (Direct Installation)
-
-If you get "command not found" when running `issues-neovim` from a direct installation:
-
-```bash
-# Reinstall the CLI globally
-cd /path/to/issues-neovim
-npm install
 npm link
 ```
 
@@ -406,137 +376,3 @@ After installation, you can use:
 ## License
 
 ISC
-
-## Troubleshooting and Debugging
-
-If you encounter issues with the plugin or CLI, you can use several tools to diagnose the problems:
-
-### Using the Neovim Health Check
-
-Run the following command inside Neovim to check the health of the plugin:
-
-```vim
-:checkhealth issues-neovim
-```
-
-This will run diagnostics that verify:
-- Node.js installation
-- Required dependencies
-- GitHub token configuration
-- Plugin installation status
-- API connectivity
-
-### Debug Commands
-
-#### Basic System Information
-
-```bash
-issues-neovim debug
-```
-
-Inside Neovim, you can also run:
-
-```vim
-:LazyVimIssuesDebug
-```
-
-This will show:
-- System information
-- Node.js version
-- Environment configuration
-- Token status (without showing the token value)
-
-#### Full Diagnostic Report
-
-For comprehensive diagnostics, run:
-
-```bash
-issues-neovim diagnose
-# Or with npm:
-npm run diagnose
-```
-
-Inside Neovim:
-
-```vim
-:LazyVimIssuesDiagnose
-```
-
-This creates a complete diagnostic report including:
-- System information
-- Installation details
-- Configuration status
-- Recent logs
-- Dependencies check
-- GitHub API connectivity
-
-The report is saved to `~/.issues-neovim/diagnostic-report-[timestamp].txt`
-
-### Enabling Verbose Logging
-
-For detailed logs to help diagnose issues:
-
-```bash
-DEBUG=issues-neovim:* issues-neovim tui
-```
-
-This enables debug logging for all components. You can also enable logging for specific components:
-
-```bash
-DEBUG=issues-neovim:cli,issues-neovim:api issues-neovim tui
-```
-
-### Log Files
-
-Logs are saved in the `~/.issues-neovim/debug.log` file. When reporting an issue, please include:
-
-1. The output of `:checkhealth issues-neovim`
-2. The diagnostic report from `issues-neovim diagnose`
-3. The relevant sections from the debug.log file
-
-### Common Issues and Solutions
-
-#### CLI Not Found (Lazy.nvim Users)
-
-If you're using Lazy.nvim and get an error about the CLI not being found:
-
-1. Run the built-in installation command:
-   ```vim
-   :LazyVimIssuesInstallCLI
-   ```
-
-2. Or install manually:
-   ```bash
-   cd ~/.local/share/nvim/lazy/issues-neovim
-   npm install
-   npm link
-   ```
-
-3. Or install globally:
-   ```bash
-   npm install -g issues-neovim
-   ```
-
-#### Authentication Errors
-
-If you see authentication errors:
-
-1. Check your GitHub token is correctly set:
-   ```bash
-   echo $GITHUB_TOKEN | wc -c
-   ```
-   Should return a number greater than 1
-
-2. Verify token permissions (should have repo and issues access)
-
-3. Try setting the token directly in your configuration:
-   ```lua
-   vim.g.github_token = "your_token_here"
-   ```
-
-#### TUI Display Issues
-
-If the TUI interface appears broken:
-1. Check terminal type and compatibility
-2. Try updating the `blessed` and `blessed-contrib` dependencies
-3. Set `TERM=xterm-256color` environment variable
