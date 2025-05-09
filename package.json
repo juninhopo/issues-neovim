@@ -1,0 +1,41 @@
+{
+  "name": "issues-cli",
+  "version": "1.0.0",
+  "description": "CLI para gerenciar issues do GitHub para LazyVim",
+  "main": "src/index.js",
+  "bin": {
+    "issue-lazyvim": "./src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "tui": "node src/index.js tui",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/juninhopo/issues-cli.git"
+  },
+  "keywords": [
+    "cli",
+    "github",
+    "issues",
+    "lazyvim"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/juninhopo/issues-cli/issues"
+  },
+  "homepage": "https://github.com/juninhopo/issues-cli#readme",
+  "dependencies": {
+    "blessed": "^0.1.81",
+    "blessed-contrib": "^4.11.0",
+    "chalk": "^4.1.2",
+    "commander": "^11.1.0",
+    "inquirer": "^8.2.6",
+    "octokit": "^3.1.2",
+    "ora": "^5.4.1",
+    "simple-git": "^3.27.0"
+  }
+}
