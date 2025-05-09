@@ -1,10 +1,10 @@
-# LazyVim Issues CLI
+# Issues Neovim
 
-A simple CLI to manage GitHub issues for the [LazyVim](https://github.com/LazyVim/LazyVim) project.
+A simple Neovim plugin to manage GitHub issues for projects.
 
 ## Installation
 
-### Lazy.nvim Installation (for Neovim users)
+### Lazy.nvim Installation
 
 For Neovim users, you can easily install this plugin using [Lazy.nvim](https://github.com/folke/lazy.nvim):
 
@@ -29,8 +29,8 @@ For Neovim users, you can easily install this plugin using [Lazy.nvim](https://g
 Clone this repository:
 
 ```bash
-git clone https://github.com/juninhopo/issues-cli.git
-cd issues-cli
+git clone https://github.com/juninhopo/issues-neovim.git
+cd issues-neovim
 ```
 
 Install dependencies:
@@ -171,7 +171,7 @@ The TUI allows you to:
 
 ### Authentication
 
-For read-only operations (listing issues, viewing details, searching) in public repositories like LazyVim, **a GitHub access token is not required**.
+For read-only operations (listing issues, viewing details, searching) in public repositories, **a GitHub access token is not required**.
 
 For write operations (creating issues, commenting), you'll need a GitHub personal access token with permissions for issues. You can configure the token as an environment variable:
 
@@ -218,9 +218,9 @@ issues-neovim comment <number>
 issues-neovim search <term>
 ```
 
-## LazyVim Integration
+## Neovim Integration
 
-There are multiple ways to integrate this CLI with LazyVim:
+There are multiple ways to integrate this CLI with Neovim:
 
 ### 1. Using Lazy.nvim (recommended)
 
@@ -261,19 +261,19 @@ return {
 
 This will:
 - Add the plugin to your Neovim setup via Lazy.nvim
-- Set up a `<leader>gi` shortcut to open LazyVim Issues in a floating terminal
+- Set up a `<leader>gi` shortcut to open GitHub Issues in a floating terminal
 - Install the required dependencies (`vim-floaterm` and `which-key.nvim`)
 
 ### 2. Manual Floating Terminal Integration
 
-Copy the provided integration file to your LazyVim configuration directory:
+Copy the provided integration file to your Neovim configuration directory:
 
 ```bash
 cp integrations/issues-neovim.lua ~/.config/nvim/lua/plugins/
 ```
 
 This will add:
-- A `<leader>gi` shortcut to open LazyVim Issues in a floating terminal
+- A `<leader>gi` shortcut to open GitHub Issues in a floating terminal
 - Dependency on the `vim-floaterm` plugin to create a floating terminal
 
 ### 3. Integrated Terminal Integration
@@ -288,7 +288,7 @@ return {
     optional = true,
     opts = {
       defaults = {
-        ["<leader>L"] = { name = "+LazyVim" },
+        ["<leader>g"] = { name = "+GitHub" },
       },
     },
   },
@@ -299,48 +299,14 @@ return {
     config = function()
       local wk = require("which-key")
       wk.register({
-        ["<leader>Li"] = { "<cmd>terminal issues-neovim<cr>", "LazyVim Issues" },
+        ["<leader>gi"] = { "<cmd>terminal issues-neovim<cr>", "GitHub Issues" },
       })
     end,
   },
 }
 ```
 
-This will add a `<leader>Li` shortcut to open the issues CLI in Neovim's integrated terminal.
-
-## Publishing to Lazy.nvim Ecosystem
-
-If you want to make your plugin available to other users via Lazy.nvim:
-
-1. **Ensure your repository follows the standard Neovim plugin structure:**
-   - Place the integration file at `lua/issues-neovim/init.lua`
-   - Include a proper `README.md` with installation and usage instructions
-   - Add a `plugin/issues-neovim.lua` for plugin registration
-
-2. **Create an appropriate plugin structure:**
-   ```
-   issues-neovim/
-   ├── lua/
-   │   └── issues-neovim/
-   │       ├── init.lua      # Main plugin file
-   │       └── config.lua    # Configuration options
-   ├── plugin/
-   │   └── issues-neovim.lua # Plugin registration
-   ├── README.md
-   └── LICENSE
-   ```
-
-3. **Push your repository to GitHub:**
-   ```bash
-   git remote add origin https://github.com/username/issues-neovim.git
-   git push -u origin main
-   ```
-
-4. **Tag releases for versioning:**
-   ```bash
-   git tag -a v1.0.0 -m "Initial release"
-   git push origin v1.0.0
-   ```
+This will add a `<leader>gi` shortcut to open the issues CLI in Neovim's integrated terminal.
 
 ## Advanced Configuration
 
@@ -372,8 +338,8 @@ return {
       -- GitHub settings (optional)
       github = {
         token = nil, -- Will use GITHUB_TOKEN env var if nil
-        owner = "LazyVim", -- Change to target repository owner
-        repo = "LazyVim",  -- Change to target repository name
+        owner = "owner", -- Change to target repository owner
+        repo = "repository",  -- Change to target repository name
       },
     },
   },
@@ -385,19 +351,19 @@ return {
 After installation, you can use:
 
 1. **Via keyboard shortcut**: Press `<leader>gi` (or your configured keybinding)
-2. **Via command**: Run `:LazyVimIssues` in Neovim
+2. **Via command**: Run `:IssuesNeovim` in Neovim
 
 ### Configuration Options
 
-| Option                | Default       | Description                              |
-|-----------------------|---------------|------------------------------------------|
-| `keymaps.open`        | `<leader>gi`  | Keyboard shortcut to open the issues TUI |
-| `ui.float.height`     | `0.9`         | Floating window height (0.0-1.0)         |
-| `ui.float.width`      | `0.9`         | Floating window width (0.0-1.0)          |
-| `ui.float.title`      | `GitHub Issues` | Floating window title                   |
-| `github.token`        | `nil`         | GitHub token (uses GITHUB_TOKEN env var if nil) |
-| `github.owner`        | `LazyVim`     | GitHub repository owner                  |
-| `github.repo`         | `LazyVim`     | GitHub repository name                   |
+| Option                | Default        | Description                              |
+|-----------------------|----------------|------------------------------------------|
+| `keymaps.open`        | `<leader>gi`   | Keyboard shortcut to open the issues TUI |
+| `ui.float.height`     | `0.9`          | Floating window height (0.0-1.0)         |
+| `ui.float.width`      | `0.9`          | Floating window width (0.0-1.0)          |
+| `ui.float.title`      | `GitHub Issues`| Floating window title                    |
+| `github.token`        | `nil`          | GitHub token (uses GITHUB_TOKEN env var if nil) |
+| `github.owner`        | `owner`        | GitHub repository owner                  |
+| `github.repo`         | `repository`   | GitHub repository name                   |
 
 ## Development
 
