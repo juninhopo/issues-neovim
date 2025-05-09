@@ -155,4 +155,58 @@ function M.safe_json_decode(json_str)
   return result
 end
 
+-- Check if the current directory is a git repository
+function M.is_git_repo()
+  local result = vim.fn.system("git rev-parse --is-inside-work-tree 2>/dev/null")
+  return result:match("true") ~= nil
+end
+
+-- Get the remote URL for the git repository
+function M.get_repo_remote_url()
+  -- Try first with origin
+  local result = vim.fn.system("git remote get-url origin 2>/dev/null")
+  if result and result ~= "" and not result:match("fatal") then
+    return vim.trim(result)
+  end
+  
+  -- If origin doesn't exist, try to get any remote
+  result = vim.fn.system("git remote 2>/dev/null")
+  if result and result ~= "" then
+    local remote = vim.split(result, "\n")[1]
+    if remote then
+      result = vim.fn.system("git remote get-url " .. remote .. " 2>/dev/null")
+      if result and result ~= "" and not result:match("fatal") then
+        return vim.trim(result)
+      end
+    end
+  end
+  
+  return nil
+end
+
+-- Parse owner and repo from a GitHub remote URL
+function M.parse_remote_url(url)
+  -- Example patterns:
+  -- https://github.com/owner/repo.git
+  -- git@github.com:owner/repo.git
+  -- git://github.com/owner/repo.git
+  
+  local owner, repo
+  
+  -- HTTPS format
+  owner, repo = url:match("github%.com[/:]([^/]+)/([^/%.]+)%.?g?i?t?$")
+  
+  -- Remove any trailing .git
+  if repo then
+    repo = repo:gsub("%.git$", "")
+  end
+  
+  return owner, repo
+end
+
+-- Detect if running on Windows
+function M.is_windows()
+  return vim.fn.has('win32') == 1 or vim.fn.has('win64') == 1
+end
+
 return M 
