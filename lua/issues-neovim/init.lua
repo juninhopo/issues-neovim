@@ -41,10 +41,8 @@ function M.setup(opts)
     M.config.github.token = vim.env.GITHUB_TOKEN
   end
   
-  -- Register the GitHub token for the CLI to use
-  if M.config.github.token then
-    vim.g.github_token = M.config.github.token
-  end
+  -- Register commands
+  M.register_commands()
   
   -- Setup keymappings if which-key is available
   if pcall(require, "which-key") then
@@ -52,19 +50,67 @@ function M.setup(opts)
     wk.register({
       [M.config.keymaps.open] = { 
         function()
-          local current_dir = vim.fn.getcwd()
-          vim.cmd(string.format(
-            "FloatermNew --height=%s --width=%s --title=%s cd %s && issues-neovim tui",
-            M.config.ui.float.height,
-            M.config.ui.float.width,
-            vim.fn.shellescape(M.config.ui.float.title),
-            vim.fn.shellescape(current_dir)
-          ))
+          M.open_issues_browser()
         end, 
         "GitHub Issues" 
       },
     })
   end
+end
+
+-- Register Neovim commands
+function M.register_commands()
+  vim.api.nvim_create_user_command("GithubIssues", function()
+    M.open_issues_browser()
+  end, { desc = "Open GitHub Issues browser" })
+  
+  vim.api.nvim_create_user_command("GithubIssue", function(opts)
+    if opts.args and tonumber(opts.args) then
+      M.view_issue(tonumber(opts.args))
+    else
+      vim.notify("Invalid issue number", vim.log.levels.ERROR)
+    end
+  end, { nargs = 1, desc = "View GitHub issue by number" })
+  
+  vim.api.nvim_create_user_command("GithubCreateIssue", function()
+    M.create_issue()
+  end, { desc = "Create a new GitHub issue" })
+end
+
+-- Function to open the issues browser
+function M.open_issues_browser()
+  -- Load the TUI module
+  local tui = require("issues-neovim.tui")
+  tui.open({
+    owner = M.config.github.owner,
+    repo = M.config.github.repo,
+    token = M.config.github.token,
+    ui = M.config.ui
+  })
+end
+
+-- Function to view a specific issue
+function M.view_issue(issue_number)
+  -- Load the issue view module
+  local issue_view = require("issues-neovim.issue_view")
+  issue_view.open(issue_number, {
+    owner = M.config.github.owner,
+    repo = M.config.github.repo,
+    token = M.config.github.token,
+    ui = M.config.ui
+  })
+end
+
+-- Function to create a new issue
+function M.create_issue()
+  -- Load the issue creation module
+  local issue_create = require("issues-neovim.issue_create")
+  issue_create.open({
+    owner = M.config.github.owner,
+    repo = M.config.github.repo,
+    token = M.config.github.token,
+    ui = M.config.ui
+  })
 end
 
 return M 
