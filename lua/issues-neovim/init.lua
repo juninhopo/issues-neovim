@@ -46,6 +46,17 @@ function M.setup(opts)
     vim.g.github_token = M.config.github.token
   end
   
+  -- Check if CLI is installed, if not install it
+  vim.defer_fn(function()
+    -- Use pcall to catch errors if CLI is not installed
+    local result = vim.fn.system("which issues-neovim")
+    if vim.v.shell_error ~= 0 then
+      -- CLI is not installed, run the installation script
+      local install = require("issues-neovim.install")
+      install.setup()
+    end
+  end, 1000)  -- Delay for 1 second to not block Neovim startup
+  
   -- Setup keymappings if which-key is available
   if pcall(require, "which-key") then
     local wk = require("which-key")
