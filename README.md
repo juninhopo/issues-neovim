@@ -67,13 +67,13 @@ If you receive a "Request quota exhausted" message, it means you've hit the rate
 To start the TUI similar to Lazygit, you can run:
 
 ```bash
-lazyvim-issues
+issues-neovim
 ```
 
 or
 
 ```bash
-lazyvim-issues tui
+issues-neovim tui
 ```
 
 The TUI allows you to:
@@ -116,7 +116,7 @@ If you don't configure the token and try to perform an operation that requires i
 #### List issues
 
 ```bash
-lazyvim-issues list
+issues-neovim list
 ```
 
 Options:
@@ -127,25 +127,25 @@ Options:
 #### View issue details
 
 ```bash
-lazyvim-issues view <number>
+issues-neovim view <number>
 ```
 
 #### Create a new issue
 
 ```bash
-lazyvim-issues create
+issues-neovim create
 ```
 
 #### Add a comment to an issue
 
 ```bash
-lazyvim-issues comment <number>
+issues-neovim comment <number>
 ```
 
 #### Search issues by term
 
 ```bash
-lazyvim-issues search <term>
+issues-neovim search <term>
 ```
 
 ## LazyVim Integration
@@ -157,7 +157,7 @@ There are two ways to integrate this CLI with LazyVim:
 Copy the provided integration file to your LazyVim configuration directory:
 
 ```bash
-cp integrations/issue-lazyvim.lua ~/.config/nvim/lua/plugins/
+cp integrations/issues-neovim.lua ~/.config/nvim/lua/plugins/
 ```
 
 This will add:
@@ -169,7 +169,7 @@ This will add:
 Alternatively, you can add the following to your configuration file:
 
 ```lua
--- ~/.config/nvim/lua/plugins/lazyvim-issues.lua
+-- ~/.config/nvim/lua/plugins/issues-neovim.lua
 return {
   {
     "folke/which-key.nvim",
@@ -187,7 +187,7 @@ return {
     config = function()
       local wk = require("which-key")
       wk.register({
-        ["<leader>Li"] = { "<cmd>terminal lazyvim-issues<cr>", "LazyVim Issues" },
+        ["<leader>Li"] = { "<cmd>terminal issues-neovim<cr>", "LazyVim Issues" },
       })
     end,
   },

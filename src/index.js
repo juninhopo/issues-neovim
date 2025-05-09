@@ -67,7 +67,7 @@ async function detectRepository() {
 
 // CLI version and description configuration
 program
-  .name('issue-lazyvim')
+  .name('issues-neovim')
   .description('CLI for managing GitHub issues')
   .version('1.0.0');
 
@@ -160,7 +160,7 @@ program
           console.error(chalk.red('Error: GitHub API rate limit exceeded.'));
           console.log(chalk.yellow('Tip: Authenticate with a token to increase rate limits.'));
           console.log(chalk.yellow('Run the command with a GitHub token:'));
-          console.log(chalk.cyan('GITHUB_TOKEN=your_token issue-lazyvim list'));
+          console.log(chalk.cyan('GITHUB_TOKEN=your_token issues-neovim list'));
         } else {
           throw apiError;
         }
