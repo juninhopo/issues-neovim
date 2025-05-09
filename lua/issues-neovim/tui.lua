@@ -244,7 +244,59 @@ local function load_issues()
     state.loading = false
     
     if err or not data then
-      update_status("Error loading issues: " .. (err or "Unknown error"), "error")
+      local error_msg = err or "Unknown error"
+      
+      -- Add more helpful diagnostic information
+      local diagnostic_info = ""
+      if err and err:match("authentication") then
+        diagnostic_info = "\n\nPossible causes:\n" ..
+                         "- GitHub token is invalid or expired\n" ..
+                         "- Token lacks 'repo' permissions\n\n" ..
+                         "Try setting a new token with :GithubSetToken"
+      elseif err and err:match("Not Found") then
+        diagnostic_info = "\n\nPossible causes:\n" ..
+                         "- Repository '" .. state.owner .. "/" .. state.repo .. "' doesn't exist\n" ..
+                         "- Your token doesn't have access to this repository\n" ..
+                         "- Repository name may be incorrect"
+      elseif err and err:match("timeout") then
+        diagnostic_info = "\n\nPossible causes:\n" ..
+                         "- Network connectivity issues\n" ..
+                         "- GitHub API may be experiencing problems\n\n" ..
+                         "Try again later or check your internet connection"
+      elseif not data then
+        diagnostic_info = "\n\nTry checking:\n" ..
+                         "- Your GitHub token is set correctly\n" ..
+                         "- You have git installed and configured\n" ..
+                         "- You're in a valid git repository\n" ..
+                         "- The remote URL is a GitHub repository"
+      end
+      
+      update_status("Error loading issues: " .. error_msg .. diagnostic_info, "error")
+      
+      -- Show diagnostic info in the details pane
+      vim.api.nvim_buf_set_option(state.buf_details, 'modifiable', true)
+      local lines = {
+        "Error loading issues",
+        "===================",
+        "",
+        "Error: " .. error_msg,
+        "",
+        "Diagnostic Information:",
+        "- Repository: " .. (state.owner or "unknown") .. "/" .. (state.repo or "unknown"),
+        "- GitHub token: " .. (state.token and "Set" or "Not set or invalid"),
+        "- Issue state: " .. state.issue_state,
+        "",
+        "Troubleshooting Steps:",
+        "1. Verify your GitHub token is valid and has proper permissions",
+        "2. Check that the repository exists and you have access to it",
+        "3. Verify you have a working internet connection",
+        "4. Try again later if GitHub API might be experiencing issues",
+        "",
+        "You can set a new token with :GithubSetToken or update your configuration."
+      }
+      vim.api.nvim_buf_set_lines(state.buf_details, 0, -1, false, lines)
+      vim.api.nvim_buf_set_option(state.buf_details, 'modifiable', false)
+      
       return
     end
     

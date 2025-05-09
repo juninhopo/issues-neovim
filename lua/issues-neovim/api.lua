@@ -57,6 +57,7 @@ local function api_request(method, endpoint, params, data, token)
     url = url,
     headers = headers,
     callback = nil,
+    timeout = 10000, -- 10 second timeout
   }
   
   -- Add body data for POST, PATCH, PUT methods
@@ -65,17 +66,70 @@ local function api_request(method, endpoint, params, data, token)
     headers["Content-Type"] = "application/json"
   end
   
-  -- Execute request
-  local response = curl.request(opts)
+  -- Execute request with retry logic
+  local response, err
+  for attempt = 1, config.request_retries do
+    local success, result = pcall(function()
+      return curl.request(opts)
+    end)
+    
+    if success and result then
+      response = result
+      break
+    else
+      err = result or "Request failed"
+      -- Wait before retry (except on last attempt)
+      if attempt < config.request_retries then
+        vim.defer_fn(function() end, config.request_retry_delay)
+      end
+    end
+  end
   
-  -- Handle errors
-  if not response or response.status < 200 or response.status >= 300 then
-    local err_msg = response and response.body or "Unknown API error"
-    return nil, err_msg
+  -- Handle connection errors
+  if not response then
+    return nil, "Connection error: " .. (err or "Failed to connect to GitHub API")
+  end
+  
+  -- Handle HTTP errors with detailed messages
+  if response.status < 200 or response.status >= 300 then
+    local error_body = response.body or ""
+    local error_message = ""
+    
+    -- Try to parse the error response from GitHub
+    local success, parsed_error = pcall(json.decode, error_body)
+    if success and parsed_error and parsed_error.message then
+      error_message = parsed_error.message
+    else
+      error_message = error_body
+    end
+    
+    -- Format error message with HTTP status
+    local detailed_error = string.format(
+      "HTTP %d: %s", 
+      response.status, 
+      error_message
+    )
+    
+    -- Add specific guidance for common errors
+    if response.status == 401 then
+      detailed_error = detailed_error .. " (Authentication failed - check your GitHub token)"
+    elseif response.status == 403 then
+      detailed_error = detailed_error .. " (Permission denied - check token permissions or rate limits)"
+    elseif response.status == 404 then
+      detailed_error = detailed_error .. " (Not Found - check repository owner/name)"
+    elseif response.status == 422 then
+      detailed_error = detailed_error .. " (Validation failed - check your input data)"
+    end
+    
+    return nil, detailed_error
   end
   
   -- Parse response
-  local parsed = json.decode(response.body)
+  local success, parsed = pcall(json.decode, response.body)
+  if not success then
+    return nil, "Failed to parse response: " .. (parsed or "invalid JSON")
+  end
+  
   return parsed
 end
 

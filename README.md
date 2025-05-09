@@ -15,7 +15,9 @@ A Neovim plugin for managing GitHub issues directly from your editor. No JavaScr
 ## Requirements
 
 - Neovim 0.7+ 
-- Dependencies defined in plugin spec:
+- Git installed and accessible in path
+- GitHub personal access token with repo permissions
+- Dependencies (installed automatically by your plugin manager):
   - [folke/which-key.nvim](https://github.com/folke/which-key.nvim)
   - [voldikss/vim-floaterm](https://github.com/voldikss/vim-floaterm)
   - [nvim-lua/plenary.nvim](https://github.com/nvim-lua/plenary.nvim)
@@ -69,6 +71,16 @@ use {
 }
 ```
 
+### Post-installation Steps
+
+After installing the plugin, make sure to:
+
+1. Restart Neovim to load the plugin
+2. Set up your GitHub token (see GitHub Authentication section)
+3. Run `:checkhealth` to verify dependencies are correctly installed
+
+If you see errors after installation, check the Troubleshooting section below.
+
 ## Configuration
 
 ### GitHub Authentication
@@ -89,6 +101,9 @@ require('issues-neovim').setup({
     token = "your_token_here", -- Not recommended to hardcode
   }
 })
+
+-- Option 3: Save the token after Neovim starts with the :GithubSetToken command
+-- :GithubSetToken your_token_here
 ```
 
 ### Repository Auto-detection
@@ -175,26 +190,60 @@ When in the issues browser:
 
 ## Troubleshooting
 
-### Token Issues
+### Plugin Not Loading
+
+If the plugin doesn't seem to load:
+
+1. Check if all dependencies are installed correctly
+2. Make sure you've restarted Neovim after installation
+3. Run `:checkhealth` to see if there are any issues reported
+4. Check if vim-floaterm is working with `:FloatermNew echo "test"`
+
+### Authentication Issues
 
 If you encounter authentication issues:
 
-1. Make sure your GitHub token is set in your environment variable:
-   ```bash
-   export GITHUB_TOKEN=your_token_here
-   ```
+1. Make sure your GitHub token is set correctly using one of these methods:
+   - Environment variable: `export GITHUB_TOKEN=your_token_here`
+   - Use the command: `:GithubSetToken your_token_here`
+   - Set in your config: `github = { token = "your_token_here" }`
 
 2. Verify the token has the `repo` scope enabled.
 
-3. You can use `:GithubSetToken your_token_here` to set and save the token within Neovim.
+3. Check that the token is valid by testing it with curl:
+   ```bash
+   curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
+   ```
 
 ### Repository Detection Issues
 
 If the plugin can't detect your repository:
 
-1. Make sure you're in a git repository with a GitHub remote.
-2. Check your git remote URL with `git remote -v`.
-3. You can manually specify the repository in your configuration.
+1. Make sure you're in a git repository with a GitHub remote
+2. Check your git remote URL with `git remote -v`
+3. Make sure the URL is in a supported format (HTTP or SSH GitHub URL)
+4. You can manually specify the repository in your configuration:
+   ```lua
+   github = {
+     owner = "owner-name",
+     repo = "repo-name"
+   }
+   ```
+
+### Floaterm Issues
+
+If you're seeing errors with vim-floaterm:
+
+1. Make sure vim-floaterm is installed: `:lua print(vim.fn.exists(":FloatermNew"))`
+2. Try using vim-floaterm directly: `:FloatermNew echo "test"`
+3. If there are issues, reinstall vim-floaterm or check its configuration
+
+### Neovim Version Issues
+
+This plugin requires Neovim 0.7 or higher. Check your version with:
+```bash
+nvim --version
+```
 
 ## License
 
