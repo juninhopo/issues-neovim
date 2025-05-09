@@ -18,7 +18,7 @@ return {
     end,
     -- Run installation script once on plugin install
     -- Option 1: Use build string instead of function (more reliable in some cases)
-    build = "cd $LAZY_DIR/issues-neovim && npm install && npm link",
+    build = "cd ~/.local/share/nvim/lazy/issues-neovim && npm install && npm link",
     
     -- Option 2: Alternative using build function with Job API (safer for async operations)
     -- Uncomment this and comment out the string version above if needed
