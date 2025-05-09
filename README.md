@@ -46,29 +46,7 @@ A Neovim plugin for managing GitHub issues directly from your editor. No JavaScr
       },
     })
   end,
-}
-```
-
-### Using [packer.nvim](https://github.com/wbthomason/packer.nvim)
-
-```lua
-use {
-  'juninhopo/issues-neovim',
-  requires = {
-    'folke/which-key.nvim',
-    'voldikss/vim-floaterm',
-    'nvim-lua/plenary.nvim',
-    'rcarriga/nvim-notify',
-  },
-  config = function()
-    require('issues-neovim').setup({
-      -- Your configuration options here
-      github = {
-        token = vim.env.GITHUB_TOKEN,
-      },
-    })
-  end
-}
+},
 ```
 
 ### Post-installation Steps
@@ -82,6 +60,55 @@ After installing the plugin, make sure to:
 If you see errors after installation, check the Troubleshooting section below.
 
 ## Configuration
+
+### Default Configuration
+
+```lua
+return {
+  "juninhopo/issues-neovim",
+  dependencies = {
+    "folke/which-key.nvim",
+    "voldikss/vim-floaterm",
+    "nvim-lua/plenary.nvim",
+    "rcarriga/nvim-notify",
+  },
+  config = function()
+    require('issues-neovim').setup({
+      -- Default keybinding settings
+      keymaps = {
+        -- Open issues-neovim
+        open = "<leader>gi",
+      },
+      
+      -- Default UI settings
+      ui = {
+        -- Float window settings
+        float = {
+          height = 0.9,
+          width = 0.9,
+          title = "GitHub Issues",
+        },
+      },
+      
+      -- GitHub related settings
+      github = {
+        token = nil, -- Will use GITHUB_TOKEN env var if nil
+        owner = nil, -- Will detect from current repository if nil
+        repo = nil,  -- Will detect from current repository if nil
+      },
+      
+      -- API settings
+      api = {
+        url = "https://api.github.com",
+        cache_enabled = true,
+        cache_duration = 5 * 60 * 1000, -- 5 minutes in milliseconds
+        request_retries = 3,
+        request_retry_delay = 1000, -- 1 second
+      },
+    })
+  end
+}
+```
 
 ### GitHub Authentication
 
@@ -121,43 +148,7 @@ require('issues-neovim').setup({
 })
 ```
 
-### Default Configuration
 
-```lua
-require('issues-neovim').setup({
-  -- Default keybinding settings
-  keymaps = {
-    -- Open issues-neovim
-    open = "<leader>gi",
-  },
-  
-  -- Default UI settings
-  ui = {
-    -- Float window settings
-    float = {
-      height = 0.9,
-      width = 0.9,
-      title = "GitHub Issues",
-    },
-  },
-  
-  -- GitHub related settings
-  github = {
-    token = nil, -- Will use GITHUB_TOKEN env var if nil
-    owner = nil, -- Will detect from current repository if nil
-    repo = nil,  -- Will detect from current repository if nil
-  },
-  
-  -- API settings
-  api = {
-    url = "https://api.github.com",
-    cache_enabled = true,
-    cache_duration = 5 * 60 * 1000, -- 5 minutes in milliseconds
-    request_retries = 3,
-    request_retry_delay = 1000, -- 1 second
-  },
-})
-```
 
 ## Usage
 
