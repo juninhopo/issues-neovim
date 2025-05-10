@@ -2,7 +2,8 @@
 
 A Neovim plugin to view and manage GitHub issues directly from your editor. This plugin integrates with GitHub's API to allow you to browse, view, and (eventually) create/comment on issues without leaving Neovim.
 
-![Screenshot 2025-05-10 at 03 37 27](https://github.com/user-attachments/assets/ad670d2f-c7b0-4a0f-bc90-ba61a730da23)
+![Screenshot 2025-05-10 at 03 52 27](https://github.com/user-attachments/assets/00f89f2e-cbd4-4f5a-ab5a-26c188f021c6)
+
 
 ## Features
 
