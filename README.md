@@ -30,6 +30,12 @@ A Neovim plugin to view and manage GitHub issues directly from your editor. This
   dependencies = {
     "nvim-lua/plenary.nvim"
   },
+  dev = false, -- Garantir que não está em modo de desenvolvimento
+  pin = false, -- Não fixar versão
+  enable = true, -- Garantir que está habilitado
+  priority = 50, -- Prioridade normal de carregamento
+  lazy = false, -- Carregar durante a inicialização
+  branch = "main", -- Usar a branch main
 },
 ```
 
