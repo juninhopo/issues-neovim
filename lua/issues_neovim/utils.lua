@@ -126,4 +126,38 @@ function M.escape_pattern(str)
   return str:gsub("([^%w])", "%%%1")
 end
 
+-- Format keyboard key for display in UI
+---@param key string
+---@return string
+function M.format_key(key)
+  if not key then
+    return "[?]"
+  end
+  
+  -- For special keys, provide a more readable format
+  local special_keys = {
+    ["<CR>"] = "Enter",
+    ["<ESC>"] = "Esc",
+    ["<TAB>"] = "Tab",
+    ["<S-TAB>"] = "Shift+Tab",
+    ["<C-"] = "Ctrl+",
+    ["<A-"] = "Alt+",
+  }
+  
+  -- Replace special key mappings
+  for pattern, replacement in pairs(special_keys) do
+    if key:find(pattern) then
+      key = key:gsub(pattern, replacement)
+      
+      -- Handle Ctrl, Alt keys with closing bracket
+      if pattern == "<C-" or pattern == "<A-" then
+        key = key:gsub(">", "")
+      end
+    end
+  end
+  
+  -- Wrap in brackets for visibility
+  return "[" .. key .. "]"
+end
+
 return M 

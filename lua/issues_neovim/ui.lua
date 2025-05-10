@@ -442,15 +442,48 @@ function M.render_issues()
   local start_idx = (M.state.page - 1) * M.state.per_page + 1
   local end_idx = math.min(start_idx + M.state.per_page - 1, total_issues)
   
-  local pagination_info = string.format(
-    "Page %d of %d (%d-%d of %d issues) - Press [n] for next page, [p] for previous page",
-    M.state.page,
-    total_pages,
-    start_idx,
-    end_idx,
-    total_issues
-  )
+  -- Create a commands help line with better formatting
+  local keys = config.keys
+  local commands = {
+    { key = keys.close, action = "Close" },
+    { key = keys.refresh, action = "Refresh" },
+    { key = keys.navigate.next .. "/" .. keys.navigate.prev, action = "Navigate" },
+    { key = keys.view_details, action = "Details" },
+    { key = "n/p", action = "Pages" },
+    { key = keys.create_issue, action = "Create" },
+    { key = keys.add_comment, action = "Comment" }
+  }
+  
+  -- Calculate the length of the pagination info
+  local pagination_info = string.format("Page %d of %d (%d-%d of %d issues)", 
+    M.state.page, total_pages, start_idx, end_idx, total_issues)
+  
+  -- Format commands with colors using %#Group# syntax (for NVIM extmarks)
+  local formatted_commands = {}
+  for _, cmd in ipairs(commands) do
+    table.insert(formatted_commands, string.format("%s %s", 
+      utils.format_key(cmd.key), cmd.action))
+  end
+  
+  -- Decide layout based on window size
+  -- Always split into multiple lines for better readability
   table.insert(lines, pagination_info)
+  
+  -- Store command line numbers for later highlighting
+  local command_line_numbers = {}
+  
+  -- Calculate how many commands can fit per line (approx. 4 commands per line for 80-char width)
+  local cmds_per_line = math.max(2, math.floor(window_width / 20))
+  
+  -- Distribute commands across lines
+  for i = 1, #formatted_commands, cmds_per_line do
+    local line_cmds = {}
+    for j = i, math.min(i + cmds_per_line - 1, #formatted_commands) do
+      table.insert(line_cmds, formatted_commands[j])
+    end
+    table.insert(command_line_numbers, #lines + 1)
+    table.insert(lines, table.concat(line_cmds, " | "))
+  end
   
   -- Set lines
   api.nvim_buf_set_lines(M.state.bufnr, 0, -1, false, lines)
@@ -458,6 +491,41 @@ function M.render_issues()
   -- Highlight header
   api.nvim_buf_add_highlight(M.state.bufnr, namespace, "Title", 0, 0, -1)
   api.nvim_buf_add_highlight(M.state.bufnr, namespace, "Comment", 2, 0, -1)
+  
+  -- Calculate footer starting line
+  local pagination_line = #lines - #command_line_numbers - 1
+  
+  -- Highlight the separator line
+  api.nvim_buf_add_highlight(M.state.bufnr, namespace, "Comment", pagination_line, 0, -1)
+  
+  -- Highlight pagination info
+  api.nvim_buf_add_highlight(M.state.bufnr, namespace, "Special", pagination_line + 1, 0, -1)
+  
+  -- Highlight command lines
+  for i, line_num in ipairs(command_line_numbers) do
+    -- Highlight the entire line with a muted color
+    api.nvim_buf_add_highlight(M.state.bufnr, namespace, "Comment", line_num - 1, 0, -1)
+    
+    -- We need to highlight the keys (text inside []) with the green color
+    -- This is easier with naive string matching than with regex
+    local line = lines[line_num]
+    if line then
+      local pos = 1
+      while true do
+        local bracket_start = line:find("%[", pos)
+        if not bracket_start then break end
+        
+        local bracket_end = line:find("%]", bracket_start)
+        if not bracket_end then break end
+        
+        -- Highlight the key in green (DiagnosticHint)
+        api.nvim_buf_add_highlight(M.state.bufnr, namespace, "DiagnosticHint", 
+          line_num - 1, bracket_start - 1, bracket_end)
+        
+        pos = bracket_end + 1
+      end
+    end
+  end
   
   -- Set cursor to selected issue with bounds checking
   if M.state.winid and api.nvim_win_is_valid(M.state.winid) and M.state.issues and #M.state.issues > 0 then
