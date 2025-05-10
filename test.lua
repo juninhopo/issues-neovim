@@ -1,29 +1,29 @@
--- Script para testar o plugin issues-neovim
+-- Script to test the issues-neovim plugin
 package.path = package.path .. ";./lua/?.lua"
 
--- Certifique-se de que plenary.nvim está acessível
--- Se você receber um erro, ajuste o caminho para seu ambiente
--- package.path = package.path .. ";/caminho/para/plenary.nvim/lua/?.lua"
+-- Make sure plenary.nvim is accessible
+-- If you get an error, adjust the path to your environment
+-- package.path = package.path .. ";/path/to/plenary.nvim/lua/?.lua"
 
 local ok, issues_neovim = pcall(require, "issues_neovim")
 if not ok then
-  print("Erro ao carregar o módulo issues_neovim:")
+  print("Error loading the issues_neovim module:")
   print(issues_neovim)
   os.exit(1)
 end
 
--- Configurar o plugin
+-- Configure the plugin
 issues_neovim.setup({
   github = {
-    -- Defina seu token GitHub aqui, se necessário
-    -- token = "seu_token_github"
+    -- Define your GitHub token here, if needed
+    -- token = "your_github_token"
   }
 })
 
--- Expor funções para teste no escopo global
+-- Expose functions for testing in the global scope
 _G.open_issues = function()
   issues_neovim.ui.open()
 end
 
-print("Plugin issues-neovim carregado com sucesso!")
-print("Execute ':lua open_issues()' para abrir a interface") 
+print("Plugin issues-neovim loaded successfully!")
+print("Run ':lua open_issues()' to open the interface") 

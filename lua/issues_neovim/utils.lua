@@ -14,11 +14,11 @@ function M.format_date(date_string)
     return date_string
   end
   
-  -- Garantir que o formato seja consistente (DD/MM/YYYY)
+  -- Ensure the format is consistent (DD/MM/YYYY)
   return string.format("%02d/%02d/%s", 
     tonumber(day), 
     tonumber(month), 
-    year:sub(3, 4)  -- Usar apenas os dois últimos dígitos do ano
+    year:sub(3, 4)  -- Use only the last two digits of the year
   )
 end
 

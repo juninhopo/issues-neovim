@@ -1,38 +1,38 @@
--- Verificar se o plugin já foi carregado
+-- Check if the plugin has already been loaded
 if vim.g.loaded_issues_neovim then
   return
 end
 vim.g.loaded_issues_neovim = true
 
--- Atalho para criar comandos
+-- Shortcut to create commands
 local cmd = vim.api.nvim_create_user_command
 
--- Comando para abrir a interface principal do GitHub Issues
+-- Command to open the main GitHub Issues interface
 cmd("IssuesNeovim", function()
   require("issues_neovim").ui.open()
 end, {
-  desc = "Abrir interface do GitHub Issues",
+  desc = "Open GitHub Issues interface",
 })
 
--- Comando para executar diagnóstico da API do GitHub
+-- Command to run GitHub API diagnostics
 cmd("IssuesNeovimDiagnose", function()
   require("issues_neovim").diagnose_github_api()
 end, {
-  desc = "Diagnosticar problemas de conexão com a API do GitHub",
+  desc = "Diagnose GitHub API connection issues",
 })
 
--- Comando para configurar o token do GitHub
+-- Command to configure the GitHub token
 cmd("IssuesNeovimSetupToken", function()
   local token_path = vim.fn.expand("~/.config/github_token")
   vim.cmd("edit " .. token_path)
 end, {
-  desc = "Configurar token do GitHub",
+  desc = "Configure GitHub token",
 })
 
--- Autocmd para inicializar o plugin na inicialização do Neovim
+-- Autocmd to initialize the plugin on Neovim startup
 vim.api.nvim_create_autocmd("VimEnter", {
   callback = function()
-    -- Carregar com atraso para não bloquear a inicialização do Neovim
+    -- Load with delay to avoid blocking Neovim initialization
     vim.defer_fn(function()
       require("issues_neovim").setup()
     end, 100)

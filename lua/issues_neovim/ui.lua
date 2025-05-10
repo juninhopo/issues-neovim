@@ -279,11 +279,11 @@ function M.render_issues()
   -- Create format strings
   local format_string = "%-" .. col_widths.number .. "s | %s | %-" .. col_widths.title .. "s | %-" .. col_widths.created .. "s | %-" .. col_widths.comments .. "s"
   
-  -- Inserir título
+  -- Insert title
   table.insert(lines, "GitHub Issues: " .. github.cache.owner .. "/" .. github.cache.repository)
   table.insert(lines, string.rep("─", window_width))
   
-  -- Cabeçalho da tabela com espaçamento correto
+  -- Table header with correct spacing
   local header_padding_size = math.max(0, col_widths.effective_state - 5) -- "State" is 5 characters
   local state_header = "State" .. string.rep(" ", header_padding_size)
   local header = string.format(
@@ -304,7 +304,7 @@ function M.render_issues()
     for i, issue in ipairs(M.state.issues) do
       local issue_number = string.format("%-" .. col_widths.number .. "d", issue.number)
       
-      -- Estado colorido e com largura consistente
+      -- Colored state with consistent width
       local state
       local state_text
       if issue.state == "open" then
@@ -315,25 +315,25 @@ function M.render_issues()
         state = "CLOSED"
       end
       
-      -- Padding para manter o alinhamento consistente
-      -- Calculamos baseado na largura efetiva (já considerando tags de highlight)
+      -- Padding to maintain consistent alignment
+      -- Calculate based on effective width (already considering highlight tags)
       local display_width = col_widths.effective_state
       local padding_size = math.max(0, display_width - #state_text)
       local padding = string.rep(" ", padding_size)
       state = state .. padding
       
-      -- Título com largura variável baseada no tamanho da janela
+      -- Title with variable width based on window size
       local title = utils.truncate(issue.title, col_widths.title - 2) -- -2 for safety
       title = string.format("%-" .. col_widths.title .. "s", title)
       
-      -- Data formatada com largura dinâmica
+      -- Formatted date with dynamic width
       local created = utils.format_date(issue.created_at)
       created = string.format("%-" .. col_widths.created .. "s", created)
       
-      -- Comentários
+      -- Comments
       local comments = string.format("%-" .. col_widths.comments .. "s", tostring(issue.comments or 0))
       
-      -- Formatar linha inteira
+      -- Format entire line
       local line = string.format(
         format_string, 
         issue_number,
