@@ -1,5 +1,4 @@
-# issues-neovim
-
+# Issues Neovim
 A Neovim plugin to view and manage GitHub issues directly from your editor. This plugin integrates with GitHub's API to allow you to browse, view, and (eventually) create/comment on issues without leaving Neovim.
 
 ![Screenshot 2025-05-10 at 03 57 48](https://github.com/user-attachments/assets/6e8a84bf-808c-4e38-b760-e1416960faa7)
