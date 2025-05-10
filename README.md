@@ -1,4 +1,5 @@
 # Issues Neovim
+
 A Neovim plugin to view and manage GitHub issues directly from your editor. This plugin integrates with GitHub's API to allow you to browse, view, and (eventually) create/comment on issues without leaving Neovim.
 
 ![Screenshot 2025-05-10 at 03 57 48](https://github.com/user-attachments/assets/6e8a84bf-808c-4e38-b760-e1416960faa7)
@@ -7,11 +8,15 @@ A Neovim plugin to view and manage GitHub issues directly from your editor. This
 
 ## Features
 
-- Lists all open and closed issues in the current repository
-- Detailed view of issues with description and comments
-- Easily navigate between issues
-- Support for refreshing issue data
-- Designed to work seamlessly with LazyVim
+| Features                          | Done               |
+| --------------------------------- | ------------------ |
+| List issues on Public Repository  | :heavy_check_mark: |
+| List Issues on Private Repository | :x:                |
+| Details Issue                     | :heavy_check_mark: |
+| Create Issue                      | :x:                |
+| Close Issue                       | :x:                |
+| Re-open Issue                     | :x:                |
+| Comment Issue                     | :x:                |
 
 ## Requirements
 
