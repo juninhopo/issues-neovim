@@ -243,35 +243,68 @@ function M.render_issues()
     return
   end
   
-  if not M.state.issues or #M.state.issues == 0 then
-    api.nvim_buf_set_lines(M.state.bufnr, 0, -1, false, { "No issues found." })
-    return
-  end
-  
   local lines = {}
   local namespace = api.nvim_create_namespace("issues_neovim")
   api.nvim_buf_clear_namespace(M.state.bufnr, namespace, 0, -1)
   
-  -- Add header
-  table.insert(lines, "GitHub Issues: " .. github.cache.owner .. "/" .. github.cache.repository)
-  table.insert(lines, string.rep("─", 80))
-  table.insert(lines, " # | State  | Title                                             | Created     | Comments")
-  table.insert(lines, string.rep("─", 80))
+  -- Tamanho total da tabela
+  local total_width = 1920 -- default width of the terminal
   
-  -- Add issues
-  for i, issue in ipairs(M.state.issues) do
-    local state = utils.colorize_state(issue.state)
-    local title = utils.truncate(issue.title, 50)
-    local created = utils.format_date(issue.created_at)
-    local line = string.format("%2d | %s | %s | %s | %d", 
-      issue.number, 
-      state, 
-      title, 
-      created, 
-      issue.comments or 0
-    )
-    
-    table.insert(lines, line)
+  -- Inserir título
+  table.insert(lines, "GitHub Issues: " .. github.cache.owner .. "/" .. github.cache.repository)
+  table.insert(lines, string.rep("─", total_width))
+  
+  -- Cabeçalho da tabela com espaçamento correto
+  local header_format = "%-4s | %-25s | %-50s | %-10s | %-10s"
+  local header = string.format(
+    header_format,
+    "#",
+    "State",
+    "Title",
+    "Created",
+    "Comments"
+  )
+  table.insert(lines, header)
+  table.insert(lines, string.rep("─", total_width))
+  
+  if not M.state.issues or #M.state.issues == 0 then
+    table.insert(lines, "No issues found.")
+  else
+    -- Add issues
+    for i, issue in ipairs(M.state.issues) do
+      local issue_number = string.format("%-4d", issue.number)
+      
+      -- Estado colorido e com largura consistente
+      local state
+      if issue.state == "open" then
+        state = "%#DiagnosticInfo#OPEN%#Normal#"
+      else
+        state = "%#DiagnosticError#CLOSED%#Normal#"
+      end
+      
+      -- Título com largura fixa
+      local title = utils.truncate(issue.title, 48)
+      title = string.format("%-50s", title)
+      
+      -- Data formatada com largura fixa
+      local created = utils.format_date(issue.created_at)
+      created = string.format("%-10s", created)
+      
+      -- Comentários
+      local comments = string.format("%-10s", tostring(issue.comments or 0))
+      
+      -- Formatar linha inteira
+      local line = string.format(
+        "%-4s | %-25s | %-50s | %-10s | %-10s", 
+        issue_number,
+        state, 
+        title, 
+        created, 
+        comments
+      )
+      
+      table.insert(lines, line)
+    end
   end
   
   -- Set lines
@@ -281,16 +314,22 @@ function M.render_issues()
   api.nvim_buf_add_highlight(M.state.bufnr, namespace, "Title", 0, 0, -1)
   api.nvim_buf_add_highlight(M.state.bufnr, namespace, "Comment", 2, 0, -1)
   
-  -- Set cursor to selected issue
-  if M.state.winid and api.nvim_win_is_valid(M.state.winid) then
-    local cursor_line = M.state.selected_index
-    if cursor_line < 1 then
-      cursor_line = 1
-    elseif cursor_line > #M.state.issues then
-      cursor_line = #M.state.issues
+  -- Set cursor to selected issue with bounds checking
+  if M.state.winid and api.nvim_win_is_valid(M.state.winid) and M.state.issues and #M.state.issues > 0 then
+    -- Ensure selected_index is within bounds
+    if M.state.selected_index < 1 then
+      M.state.selected_index = 1
+    elseif M.state.selected_index > #M.state.issues then
+      M.state.selected_index = #M.state.issues
     end
     
-    api.nvim_win_set_cursor(M.state.winid, { cursor_line + 4, 0 }) -- +4 for header lines
+    -- Position cursor (4 header lines + selected index)
+    api.nvim_win_set_cursor(M.state.winid, { M.state.selected_index + 4, 0 })
+  else
+    -- If no issues, position cursor at header
+    if M.state.winid and api.nvim_win_is_valid(M.state.winid) then
+      api.nvim_win_set_cursor(M.state.winid, { 3, 0 }) -- Position at header line
+    end
   end
 end
 

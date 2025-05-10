@@ -34,6 +34,7 @@ M.cache = {
   owner = nil,
 }
 
+---Setup the GitHub module
 function M.setup()
   -- Validate config
   M.set_token()
@@ -42,7 +43,7 @@ function M.setup()
   M.get_current_repo()
 end
 
--- Set GitHub token from various sources
+---Set GitHub token from various sources
 function M.set_token()
   if config.token and config.token ~= "" then
     return true
@@ -82,14 +83,24 @@ function M.set_token()
 # ghp_1234567890abcdefghijklmnopqrstuvwxyz
 ]]
     token_path:write(instructions, "w")
-    vim.notify("Arquivo de token do GitHub criado em " .. token_path:absolute() .. ". Por favor, siga as instruções no arquivo.", vim.log.levels.WARN, { title = "issues-neovim" })
+    vim.notify(
+      "Arquivo de token do GitHub criado em " .. token_path:absolute() .. ". Por favor, siga as instruções no arquivo.",
+      vim.log.levels.WARN,
+      { title = "issues-neovim" }
+    )
   end
   
-  vim.notify("Token do GitHub não configurado. Algumas funcionalidades podem não funcionar corretamente.", vim.log.levels.WARN, { title = "issues-neovim" })
+  vim.notify(
+    "Token do GitHub não configurado. Algumas funcionalidades podem não funcionar corretamente.",
+    vim.log.levels.WARN,
+    { title = "issues-neovim" }
+  )
   return false
 end
 
--- Get the current repository from git config
+---Get the current repository from git config
+---@return string|nil owner Repository owner
+---@return string|nil repo Repository name
 function M.get_current_repo()
   local result = utils.get_git_repo_info()
   if result then
@@ -101,7 +112,9 @@ function M.get_current_repo()
   return nil, nil
 end
 
--- Build the API URL for the current repository
+---Build the API URL for the current repository
+---@param endpoint string The API endpoint to append
+---@return string|nil url The full API URL
 function M.build_api_url(endpoint)
   if not M.cache.owner or not M.cache.repository then
     if not M.get_current_repo() then
@@ -109,7 +122,8 @@ function M.build_api_url(endpoint)
     end
   end
   
-  return string.format("%s/repos/%s/%s%s", 
+  return string.format(
+    "%s/repos/%s/%s%s", 
     config.api_url, 
     M.cache.owner, 
     M.cache.repository,
@@ -117,7 +131,10 @@ function M.build_api_url(endpoint)
   )
 end
 
--- Make a request to the GitHub API
+---Make a request to the GitHub API
+---@param url string The API URL to request
+---@param method string The HTTP method to use
+---@return table|nil response The parsed API response
 function M.api_request(url, method)
   method = method or "GET"
   
@@ -148,22 +165,31 @@ function M.api_request(url, method)
   
   if not response or response.status ~= 200 then
     local error_msg = response and response.body or "Falha na conexão com a API do GitHub"
-    vim.notify("GitHub API error: " .. error_msg, vim.log.levels.ERROR, { title = "issues-neovim" })
+    vim.notify(
+      "GitHub API error: " .. error_msg,
+      vim.log.levels.ERROR,
+      { title = "issues-neovim" }
+    )
     return nil
   end
   
   -- Decodificar o JSON com tratamento de erros
   local success, result = pcall(vim.json.decode, response.body)
   if not success then
-    vim.notify("Erro ao processar resposta JSON da API do GitHub", vim.log.levels.ERROR, { title = "issues-neovim" })
+    vim.notify(
+      "Erro ao processar resposta JSON da API do GitHub",
+      vim.log.levels.ERROR,
+      { title = "issues-neovim" }
+    )
     return nil
   end
   
   return result
 end
 
--- Get issues for the current repository
----@return issues_neovim.github.Issue[]|nil
+---Get issues for the current repository
+---@param force_refresh boolean Whether to force a refresh of cached issues
+---@return issues_neovim.github.Issue[]|nil issues The list of issues
 function M.get_issues(force_refresh)
   if M.cache.issues and #M.cache.issues > 0 and not force_refresh then
     return M.cache.issues
@@ -171,7 +197,11 @@ function M.get_issues(force_refresh)
   
   local api_url = M.build_api_url("/issues?state=all")
   if not api_url then
-    vim.notify("Could not determine repository information", vim.log.levels.ERROR, { title = "issues-neovim" })
+    vim.notify(
+      "Could not determine repository information",
+      vim.log.levels.ERROR,
+      { title = "issues-neovim" }
+    )
     return nil
   end
   
@@ -184,9 +214,10 @@ function M.get_issues(force_refresh)
   return nil
 end
 
--- Get a specific issue by number
----@param issue_number number
----@return issues_neovim.github.Issue|nil
+---Get a specific issue by number
+---@param issue_number number The issue number to get
+---@param force_refresh boolean Whether to force a refresh of cached issues
+---@return issues_neovim.github.Issue|nil issue The issue
 function M.get_issue(issue_number, force_refresh)
   if M.cache.issues and not force_refresh then
     for _, issue in ipairs(M.cache.issues) do
@@ -204,9 +235,10 @@ function M.get_issue(issue_number, force_refresh)
   return M.api_request(api_url)
 end
 
--- Get comments for a specific issue
----@param issue_number number
----@return issues_neovim.github.Comment[]|nil
+---Get comments for a specific issue
+---@param issue_number number The issue number to get comments for
+---@param force_refresh boolean Whether to force a refresh of cached comments
+---@return issues_neovim.github.Comment[]|nil comments The comments
 function M.get_comments(issue_number, force_refresh)
   if M.cache.comments[issue_number] and not force_refresh then
     return M.cache.comments[issue_number]
@@ -226,7 +258,9 @@ function M.get_comments(issue_number, force_refresh)
   return nil
 end
 
--- Função para debug da resposta da API
+---Função para debug da resposta da API
+---@param url string The API URL to debug
+---@return table debug_info Debug information about the API response
 function M.debug_api_response(url)
   local headers = {
     Accept = "application/vnd.github.v3+json",
@@ -258,7 +292,11 @@ function M.debug_api_response(url)
     file:write("Headers: " .. debug_info.headers .. "\n")
     file:write("Body: " .. (response.body or "") .. "\n")
     file:close()
-    vim.notify("Debug info written to " .. log_path, vim.log.levels.INFO, { title = "issues-neovim" })
+    vim.notify(
+      "Debug info written to " .. log_path,
+      vim.log.levels.INFO,
+      { title = "issues-neovim" }
+    )
   end
   
   return debug_info

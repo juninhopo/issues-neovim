@@ -14,7 +14,12 @@ function M.format_date(date_string)
     return date_string
   end
   
-  return string.format("%s/%s/%s %s:%s", day, month, year, hour, min)
+  -- Garantir que o formato seja consistente (DD/MM/YYYY)
+  return string.format("%02d/%02d/%s", 
+    tonumber(day), 
+    tonumber(month), 
+    year:sub(3, 4)  -- Usar apenas os dois últimos dígitos do ano
+  )
 end
 
 -- Extract owner and repo from git remote URL
