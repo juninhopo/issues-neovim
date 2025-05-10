@@ -1,27 +1,22 @@
-# Issues Neovim
+# issues-neovim
 
-A Neovim plugin for managing GitHub issues directly from your editor. No JavaScript or external dependencies required - fully implemented in Lua!
+A Neovim plugin to view and manage GitHub issues directly from your editor. This plugin integrates with GitHub's API to allow you to browse, view, and (eventually) create/comment on issues without leaving Neovim.
+
+![issues-neovim screenshot](https://github.com/juninhopo/issues-neovim/blob/main/screenshot.png)
 
 ## Features
 
-- Browse open and closed issues
-- View issue details and comments
-- Create new issues
-- Comment on existing issues
-- Search issues
-- Automatic repository detection based on git remote URL
-- Beautiful floating UI using native Neovim windows
+- Lists all open and closed issues in the current repository
+- Detailed view of issues with description and comments
+- Easily navigate between issues
+- Support for refreshing issue data
+- Designed to work seamlessly with LazyVim
 
 ## Requirements
 
-- Neovim 0.7+ 
-- Git installed and accessible in path
-- GitHub personal access token with repo permissions
-- Dependencies (installed automatically by your plugin manager):
-  - [folke/which-key.nvim](https://github.com/folke/which-key.nvim)
-  - [voldikss/vim-floaterm](https://github.com/voldikss/vim-floaterm)
-  - [nvim-lua/plenary.nvim](https://github.com/nvim-lua/plenary.nvim)
-  - [rcarriga/nvim-notify](https://github.com/rcarriga/nvim-notify)
+- Neovim 0.8.0+
+- [plenary.nvim](https://github.com/nvim-lua/plenary.nvim) (for HTTP requests and utilities)
+- Git repository connected to GitHub
 
 ## Installation
 
@@ -31,219 +26,104 @@ A Neovim plugin for managing GitHub issues directly from your editor. No JavaScr
 {
   "juninhopo/issues-neovim",
   dependencies = {
-    "folke/which-key.nvim",
-    "voldikss/vim-floaterm",
-    "nvim-lua/plenary.nvim",
-    "rcarriga/nvim-notify",
+    "nvim-lua/plenary.nvim"
   },
   config = function()
-    require("issues-neovim").setup({
-      -- Your configuration options here
-      github = {
-        token = vim.env.GITHUB_TOKEN, -- Set from environment variable
-        -- owner = "YourDefaultOwner", -- Optional: Set default repo owner
-        -- repo = "YourDefaultRepo",   -- Optional: Set default repo name
-      },
+    require("issues_neovim").setup({
+      -- Your configuration here (optional)
     })
   end,
-},
+}
 ```
 
-### Post-installation Steps
-
-After installing the plugin, make sure to:
-
-1. Restart Neovim to load the plugin
-2. Set up your GitHub token (see GitHub Authentication section)
-3. Run `:checkhealth` to verify dependencies are correctly installed
-
-If you see errors after installation, check the Troubleshooting section below.
-
-## Configuration
-
-### Default Configuration
+### Using [packer.nvim](https://github.com/wbthomason/packer.nvim)
 
 ```lua
-return {
+use {
   "juninhopo/issues-neovim",
-  dependencies = {
-    "folke/which-key.nvim",
-    "voldikss/vim-floaterm",
-    "nvim-lua/plenary.nvim",
-    "rcarriga/nvim-notify",
-  },
+  requires = { "nvim-lua/plenary.nvim" },
   config = function()
-    require('issues-neovim').setup({
-      -- Default keybinding settings
-      keymaps = {
-        -- Open issues-neovim
-        open = "<leader>gi",
-      },
-      
-      -- Default UI settings
-      ui = {
-        -- Float window settings
-        float = {
-          height = 0.9,
-          width = 0.9,
-          title = "GitHub Issues",
-        },
-      },
-      
-      -- GitHub related settings
-      github = {
-        token = nil, -- Will use GITHUB_TOKEN env var if nil
-        owner = nil, -- Will detect from current repository if nil
-        repo = nil,  -- Will detect from current repository if nil
-      },
-      
-      -- API settings
-      api = {
-        url = "https://api.github.com",
-        cache_enabled = true,
-        cache_duration = 5 * 60 * 1000, -- 5 minutes in milliseconds
-        request_retries = 3,
-        request_retry_delay = 1000, -- 1 second
-      },
-    })
+    require("issues_neovim").setup()
   end
 }
 ```
 
+## Configuration
+
+You can configure the plugin by passing a table to the setup function:
+
+```lua
+require("issues_neovim").setup({
+  enabled = true,
+  keys = {
+    open = "<leader>gi",
+    close = "q",
+    refresh = "r",
+    navigate = { prev = "k", next = "j" },
+    view_details = "<CR>",
+    create_issue = "c",
+    add_comment = "a",
+  },
+  ui = {
+    width = 0.8,
+    height = 0.8,
+    border = "rounded",
+    title = "GitHub Issues",
+  },
+  github = {
+    api_url = "https://api.github.com",
+    username = "your-github-username", -- Optional, defaults to juninhopo
+    token = nil, -- GitHub Personal Access Token (optional, but recommended)
+  },
+})
+```
+
 ### GitHub Authentication
 
-To use this plugin, you need a GitHub personal access token with the appropriate permissions to access repositories and manage issues.
+For private repositories or better rate limits, a GitHub token is recommended. The plugin will look for a token in the following order:
 
-1. Create a personal access token on GitHub: [https://github.com/settings/tokens](https://github.com/settings/tokens)
-2. Grant it the `repo` scope for full repository access
-3. Set the token in your environment or directly in your Neovim config:
+1. Token set directly in configuration:
+   ```lua
+   require("issues_neovim").setup({
+     github = {
+       token = "your-github-token"
+     }
+   })
+   ```
 
-```lua
--- Option 1: Set in your shell environment (recommended)
--- export GITHUB_TOKEN=your_token_here
+2. Environment variable `GITHUB_TOKEN` in your shell (e.g., in `.zshrc`):
+   ```bash
+   export GITHUB_TOKEN="your-github-token"
+   ```
 
--- Option 2: Set directly in your Neovim config (less secure)
-require('issues-neovim').setup({
-  github = {
-    token = "your_token_here", -- Not recommended to hardcode
-  }
-})
+3. Token stored in file `~/.config/github_token`
 
--- Option 3: Save the token after Neovim starts with the :GithubSetToken command
--- :GithubSetToken your_token_here
-```
-
-### Repository Auto-detection
-
-By default, the plugin will automatically detect the GitHub repository information from your git remote URL. If you're working in a git repository with a GitHub remote, the plugin will automatically use that repository for GitHub issues.
-
-You can also specify a default repository in your configuration:
-
-```lua
-require('issues-neovim').setup({
-  github = {
-    owner = "juninhopo", -- Default repository owner
-    repo = "issues-neovim", -- Default repository name
-  }
-})
-```
-
-
+To create a GitHub token, visit: https://github.com/settings/tokens
+For basic repository access, the `repo` scope should be sufficient.
 
 ## Usage
 
-Once installed, you can use the following commands:
+- Open the issues list: `<leader>gi` or `:IssuesNeovim`
+- Navigate between issues: `j/k` (or your configured keys)
+- View issue details: `<CR>` (Enter)
+- Refresh issues: `r`
+- Close the window: `q`
 
-### Commands
+## Commands
 
-- `:GithubIssues` - Open the issues browser
-- `:GithubIssue <number>` - View a specific issue by number
-- `:GithubCreateIssue` - Create a new issue
-- `:GithubSetToken <token>` - Set and save your GitHub token
-
-### Default Keybindings
-
-- `<leader>gi` - Open the issues browser
-
-### Issue Browser Keybindings
-
-When in the issues browser:
-
-- `j/k` - Navigate through issues
-- `Enter` - View issue details
-- `c` - Add a comment to the selected issue
-- `n` - Create a new issue
-- `r` - Refresh issues list
-- `o` - Toggle between open and closed issues
-- `s` - Search issues
-- `l` - View API rate limits
-- `q` - Close the browser
+- `:IssuesNeovim` - Open the issues list
+- `:IssuesNeovimRefresh` - Refresh the list of issues
 
 ## Troubleshooting
 
-### Plugin Not Loading
-
-If the plugin doesn't seem to load:
-
-1. Check if all dependencies are installed correctly
-2. Make sure you've restarted Neovim after installation
-3. Run `:checkhealth` to see if there are any issues reported
-4. Check if vim-floaterm is working with `:FloatermNew echo "test"`
-
-### Authentication Issues
-
-If you encounter authentication issues:
-
-1. Make sure your GitHub token is set correctly using one of these methods:
-   - Environment variable: `export GITHUB_TOKEN=your_token_here`
-   - Use the command: `:GithubSetToken your_token_here`
-   - Set in your config: `github = { token = "your_token_here" }`
-
-2. Verify the token has the `repo` scope enabled.
-
-3. Check that the token is valid by testing it with curl:
-   ```bash
-   curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
-   ```
-
-### Repository Detection Issues
-
-If the plugin can't detect your repository:
-
-1. Make sure you're in a git repository with a GitHub remote
-2. Check your git remote URL with `git remote -v`
-3. Make sure the URL is in a supported format (HTTP or SSH GitHub URL)
-4. You can manually specify the repository in your configuration:
-   ```lua
-   github = {
-     owner = "owner-name",
-     repo = "repo-name"
-   }
-   ```
-
-### Floaterm Issues
-
-If you're seeing errors with vim-floaterm:
-
-1. Make sure vim-floaterm is installed: `:lua print(vim.fn.exists(":FloatermNew"))`
-2. Try using vim-floaterm directly: `:FloatermNew echo "test"`
-3. If there are issues, reinstall vim-floaterm or check its configuration
-
-### Neovim Version Issues
-
-This plugin requires Neovim 0.7 or higher. Check your version with:
-```bash
-nvim --version
-```
+- **API errors**: Make sure your GitHub token has the correct permissions
+- **No issues found**: Verify that you're in a valid git repository with a GitHub remote
+- **Plugin doesn't load**: Check that plenary.nvim is installed and accessible
 
 ## License
 
-Licensed under the ISC License - see the LICENSE file for details.
+MIT
 
-## Contributing
+## Author
 
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## Credits
-
-Created by [juninhopo](https://github.com/juninhopo)
+juninhopo
