@@ -30,12 +30,7 @@ A Neovim plugin to view and manage GitHub issues directly from your editor. This
   dependencies = {
     "nvim-lua/plenary.nvim"
   },
-  config = function()
-    require("issues_neovim").setup({
-      -- Your configuration here (optional)
-    })
-  end,
-}
+},
 ```
 
 ### Using [packer.nvim](https://github.com/wbthomason/packer.nvim)
@@ -55,29 +50,39 @@ use {
 You can configure the plugin by passing a table to the setup function:
 
 ```lua
-require("issues_neovim").setup({
-  enabled = true,
-  keys = {
-    open = "<leader>gi",
-    close = "q",
-    refresh = "r",
-    navigate = { prev = "k", next = "j" },
-    view_details = "<CR>",
-    create_issue = "c",
-    add_comment = "a",
+return {
+  "juninhopo/issues-neovim",
+  dependencies = {
+    "nvim-lua/plenary.nvim"
   },
-  ui = {
-    width = 0.8,
-    height = 0.8,
-    border = "rounded",
-    title = "GitHub Issues",
-  },
-  github = {
-    api_url = "https://api.github.com",
-    username = "your-github-username", -- Optional, defaults to juninhopo
-    token = nil, -- GitHub Personal Access Token (optional, but recommended)
-  },
-})
+  config = function()
+    require("issues_neovim").setup({
+      enabled = true,
+      keys = {
+        open = "<leader>gi",
+        close = "q",
+        refresh = "r",
+        navigate = { prev = "k", next = "j" },
+        view_details = "<CR>",
+        create_issue = "c",
+        add_comment = "a",
+      },
+      ui = {
+        width = 0.8,
+        height = 0.8,
+        border = "rounded",
+        title = "GitHub Issues",
+      },
+      github = {
+        api_url = "https://api.github.com",
+        -- Optional: Set your GitHub username if different from juninhopo
+        -- username = "your-github-username",
+        -- Optional: Set your GitHub token here or use one of the other methods mentioned in the docs
+        -- token = nil, -- Will check environment variables and ~/.config/github_token
+      },
+    })
+  end,
+}
 ```
 
 ### GitHub Authentication
