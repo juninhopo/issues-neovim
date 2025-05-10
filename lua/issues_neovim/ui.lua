@@ -14,6 +14,8 @@ local config = require("issues_neovim").config
 ---@field issues issues_neovim.github.Issue[]|nil
 ---@field selected_index number
 ---@field mode string
+---@field page number
+---@field per_page number
 
 -- UI state
 M.state = {
@@ -24,6 +26,8 @@ M.state = {
   issues = nil,
   selected_index = 1,
   mode = "list", -- "list" or "details"
+  page = 1,
+  per_page = 10
 }
 
 function M.setup()
@@ -113,6 +117,32 @@ function M.set_keymaps()
     end
   })
   
+  -- Add pagination keymaps
+  api.nvim_buf_set_keymap(buf, "n", "n", "", {
+    noremap = true,
+    silent = true,
+    callback = function()
+      if M.state.issues and #M.state.issues > 0 then
+        local total_pages = math.ceil(#M.state.issues / M.state.per_page)
+        if M.state.page < total_pages then
+          M.state.page = M.state.page + 1
+          M.render_issues()
+        end
+      end
+    end
+  })
+  
+  api.nvim_buf_set_keymap(buf, "n", "p", "", {
+    noremap = true,
+    silent = true,
+    callback = function()
+      if M.state.page > 1 then
+        M.state.page = M.state.page - 1
+        M.render_issues()
+      end
+    end
+  })
+  
   -- Refresh issues
   api.nvim_buf_set_keymap(buf, "n", keys.refresh, "", {
     noremap = true,
@@ -184,19 +214,61 @@ function M.navigate(direction)
     return
   end
   
+  local current_page_start = (M.state.page - 1) * M.state.per_page + 1
+  local current_page_end = math.min(current_page_start + M.state.per_page - 1, #M.state.issues)
+  
+  -- Calculate new index based on direction
   local new_index = M.state.selected_index + direction
   
-  if new_index < 1 then
-    new_index = #M.state.issues
-  elseif new_index > #M.state.issues then
-    new_index = 1
+  -- Handle pagination when navigating beyond current page bounds
+  if new_index < current_page_start then
+    -- Go to previous page if possible
+    if M.state.page > 1 then
+      M.state.page = M.state.page - 1
+      M.render_issues()
+      -- Set cursor to bottom of previous page
+      local prev_page_end = math.min(current_page_start - 1, #M.state.issues)
+      M.state.selected_index = prev_page_end
+      api.nvim_win_set_cursor(M.state.winid, { M.state.selected_index - current_page_start + current_page_end + 4, 0 })
+    else
+      -- Wrap to last page
+      local total_pages = math.ceil(#M.state.issues / M.state.per_page)
+      M.state.page = total_pages
+      M.render_issues()
+      M.state.selected_index = #M.state.issues
+      local last_page_size = #M.state.issues - (total_pages - 1) * M.state.per_page
+      api.nvim_win_set_cursor(M.state.winid, { last_page_size + 4, 0 })
+    end
+    return
+  elseif new_index > current_page_end then
+    -- Go to next page if possible
+    local total_pages = math.ceil(#M.state.issues / M.state.per_page)
+    if M.state.page < total_pages then
+      M.state.page = M.state.page + 1
+      M.render_issues()
+      -- Set cursor to top of next page
+      local next_page_start = current_page_end + 1
+      M.state.selected_index = next_page_start
+      api.nvim_win_set_cursor(M.state.winid, { 5, 0 }) -- First row after header (4 lines) + 1
+    else
+      -- Wrap to first page
+      M.state.page = 1
+      M.render_issues()
+      M.state.selected_index = 1
+      api.nvim_win_set_cursor(M.state.winid, { 5, 0 })
+    end
+    return
   end
   
+  -- If within current page, just update cursor position
   M.state.selected_index = new_index
+  
+  -- Calculate cursor row (adjust for header and relative position on page)
+  local cursor_row = (new_index - current_page_start) + 5 -- 4 header lines + 1
   
   -- Move cursor to the selected issue
   if M.state.winid and api.nvim_win_is_valid(M.state.winid) then
-    api.nvim_win_set_cursor(M.state.winid, { M.state.selected_index, 0 })
+    api.nvim_win_set_cursor(M.state.winid, { cursor_row, 0 })
   end
   
   -- Update details if they're open
@@ -229,6 +301,8 @@ function M.refresh()
     return
   end
   
+  -- Reset to first page when refreshing
+  M.state.page = 1
   M.load_issues()
   
   -- Also refresh details if they're visible
@@ -249,6 +323,12 @@ function M.render_issues()
   
   -- Calculate window width dynamically
   local window_width = api.nvim_win_get_width(M.state.winid)
+  
+  -- Add pagination state variables
+  if not M.state.page then
+    M.state.page = 1
+    M.state.per_page = 10
+  end
   
   -- Calculate column widths based on percentage of window width
   local col_widths = {
@@ -300,8 +380,14 @@ function M.render_issues()
   if not M.state.issues or #M.state.issues == 0 then
     table.insert(lines, "No issues found.")
   else
-    -- Add issues
-    for i, issue in ipairs(M.state.issues) do
+    -- Calculate pagination
+    local total_issues = #M.state.issues
+    local total_pages = math.ceil(total_issues / M.state.per_page)
+    local start_idx = (M.state.page - 1) * M.state.per_page + 1
+    local end_idx = math.min(start_idx + M.state.per_page - 1, total_issues)
+    
+    for i = start_idx, end_idx do
+      local issue = M.state.issues[i]
       local issue_number = string.format("%-" .. col_widths.number .. "d", issue.number)
       
       -- Colored state with consistent width
@@ -347,6 +433,25 @@ function M.render_issues()
     end
   end
   
+  -- Add pagination info at the bottom
+  table.insert(lines, string.rep("─", window_width))
+  
+  -- Make sure pagination variables are defined in all cases
+  local total_issues = M.state.issues and #M.state.issues or 0
+  local total_pages = math.ceil(total_issues / M.state.per_page)
+  local start_idx = (M.state.page - 1) * M.state.per_page + 1
+  local end_idx = math.min(start_idx + M.state.per_page - 1, total_issues)
+  
+  local pagination_info = string.format(
+    "Page %d of %d (%d-%d of %d issues) - Press [n] for next page, [p] for previous page",
+    M.state.page,
+    total_pages,
+    start_idx,
+    end_idx,
+    total_issues
+  )
+  table.insert(lines, pagination_info)
+  
   -- Set lines
   api.nvim_buf_set_lines(M.state.bufnr, 0, -1, false, lines)
   
@@ -363,8 +468,20 @@ function M.render_issues()
       M.state.selected_index = #M.state.issues
     end
     
-    -- Position cursor (4 header lines + selected index)
-    api.nvim_win_set_cursor(M.state.winid, { M.state.selected_index + 4, 0 })
+    -- Check if selected issue is on current page
+    local current_page_start = (M.state.page - 1) * M.state.per_page + 1
+    local current_page_end = math.min(current_page_start + M.state.per_page - 1, #M.state.issues)
+    
+    if M.state.selected_index < current_page_start or M.state.selected_index > current_page_end then
+      -- Selected issue is not on current page, adjust to first item on current page
+      M.state.selected_index = current_page_start
+    end
+    
+    -- Calculate cursor position based on position in current page
+    local position_in_page = M.state.selected_index - current_page_start + 1
+    
+    -- Position cursor (4 header lines + position in page)
+    api.nvim_win_set_cursor(M.state.winid, { position_in_page + 4, 0 })
   else
     -- If no issues, position cursor at header
     if M.state.winid and api.nvim_win_is_valid(M.state.winid) then
@@ -383,8 +500,16 @@ function M.show_issue_details(force_refresh)
   local cursor = api.nvim_win_get_cursor(M.state.winid)
   local current_line = cursor[1]
   
-  -- Adjust for header (4 lines)
-  local issue_index = current_line - 4
+  -- Adjust for header (4 lines) and pagination
+  local line_idx = current_line - 4
+  if line_idx < 1 then
+    return
+  end
+  
+  -- Calculate the actual issue index based on pagination
+  local current_page_start = (M.state.page - 1) * M.state.per_page + 1
+  local issue_index = current_page_start + line_idx - 1
+  
   if issue_index < 1 or issue_index > #M.state.issues then
     return
   end
