@@ -36,27 +36,57 @@ M.cache = {
 
 function M.setup()
   -- Validate config
-  if not config.token then
-    -- Try to get token from environment variable
-    local env_token = os.getenv("GITHUB_TOKEN")
-    if env_token and env_token ~= "" then
-      config.token = env_token
-    else
-      -- Try to get token from file
-      local token_path = Path:new(vim.fn.expand("~/.config/github_token"))
-      if token_path:exists() then
-        config.token = token_path:read()
-        config.token = vim.trim(config.token)
-      end
-    end
-  end
-  
-  if not config.token then
-    vim.notify("GitHub token not found. Some features may not work properly.", vim.log.levels.WARN, { title = "issues-neovim" })
-  end
+  M.set_token()
   
   -- Try to get the repository from git config
   M.get_current_repo()
+end
+
+-- Set GitHub token from various sources
+function M.set_token()
+  if config.token and config.token ~= "" then
+    return true
+  end
+  
+  -- Try to get token from environment variable
+  local env_token = os.getenv("GITHUB_TOKEN")
+  if env_token and env_token ~= "" then
+    config.token = env_token
+    return true
+  end
+  
+  -- Try to get token from file
+  local token_path = Path:new(vim.fn.expand("~/.config/github_token"))
+  if token_path:exists() then
+    config.token = token_path:read()
+    config.token = vim.trim(config.token)
+    return true
+  end
+  
+  -- Create a GitHub token file with instructions
+  if not token_path:exists() then
+    local instructions = [[
+# GitHub Personal Access Token
+# 
+# Para usar o plugin issues-neovim, você precisa criar um token de acesso pessoal do GitHub.
+# Siga estas etapas:
+#
+# 1. Vá para https://github.com/settings/tokens
+# 2. Clique em "Generate new token" > "Generate new token (classic)"
+# 3. Dê um nome ao token como "issues-neovim"
+# 4. Selecione o escopo "repo" para acesso aos repositórios
+# 5. Clique em "Generate token"
+# 6. Copie o token gerado e cole abaixo, removendo este comentário
+#
+# Exemplo:
+# ghp_1234567890abcdefghijklmnopqrstuvwxyz
+]]
+    token_path:write(instructions, "w")
+    vim.notify("Arquivo de token do GitHub criado em " .. token_path:absolute() .. ". Por favor, siga as instruções no arquivo.", vim.log.levels.WARN, { title = "issues-neovim" })
+  end
+  
+  vim.notify("Token do GitHub não configurado. Algumas funcionalidades podem não funcionar corretamente.", vim.log.levels.WARN, { title = "issues-neovim" })
+  return false
 end
 
 -- Get the current repository from git config
@@ -99,23 +129,37 @@ function M.api_request(url, method)
     headers.Authorization = "token " .. config.token
   end
   
-  local response = curl.request({
-    url = url,
-    method = method,
+  -- Usar uma abordagem mais simples, sem callback
+  local response = curl.get(url, {
     headers = headers,
-    callback = function(err)
-      if err then
-        vim.notify("GitHub API error: " .. err, vim.log.levels.ERROR, { title = "issues-neovim" })
-      end
-    end,
+    timeout = 10000,
   })
   
-  if response.status ~= 200 then
-    vim.notify("GitHub API error: " .. (response.body or "Unknown error"), vim.log.levels.ERROR, { title = "issues-neovim" })
+  -- Log de debug
+  local log_path = vim.fn.stdpath("data") .. "/github_api_debug.log"
+  local log_file = io.open(log_path, "w")
+  if log_file then
+    log_file:write("URL: " .. url .. "\n")
+    log_file:write("Status: " .. (response.status or "unknown") .. "\n")
+    log_file:write("Headers: " .. vim.inspect(response.headers or {}) .. "\n")
+    log_file:write("Body snippet: " .. string.sub(response.body or "", 1, 200) .. "...\n")
+    log_file:close()
+  end
+  
+  if not response or response.status ~= 200 then
+    local error_msg = response and response.body or "Falha na conexão com a API do GitHub"
+    vim.notify("GitHub API error: " .. error_msg, vim.log.levels.ERROR, { title = "issues-neovim" })
     return nil
   end
   
-  return vim.json.decode(response.body)
+  -- Decodificar o JSON com tratamento de erros
+  local success, result = pcall(vim.json.decode, response.body)
+  if not success then
+    vim.notify("Erro ao processar resposta JSON da API do GitHub", vim.log.levels.ERROR, { title = "issues-neovim" })
+    return nil
+  end
+  
+  return result
 end
 
 -- Get issues for the current repository
@@ -180,6 +224,44 @@ function M.get_comments(issue_number, force_refresh)
   end
   
   return nil
+end
+
+-- Função para debug da resposta da API
+function M.debug_api_response(url)
+  local headers = {
+    Accept = "application/vnd.github.v3+json",
+  }
+  
+  if config.token then
+    headers.Authorization = "token " .. config.token
+  end
+  
+  local response = curl.request({
+    url = url,
+    method = "GET",
+    headers = headers,
+  })
+  
+  local debug_info = {
+    status = response.status,
+    headers = vim.inspect(response.headers),
+    body_snippet = string.sub(response.body or "", 1, 100) .. "...",
+    success = response.status >= 200 and response.status < 300
+  }
+  
+  -- Log to file for inspection
+  local log_path = vim.fn.stdpath("data") .. "/github_api_debug.log"
+  local file = io.open(log_path, "w")
+  if file then
+    file:write("URL: " .. url .. "\n")
+    file:write("Status: " .. debug_info.status .. "\n")
+    file:write("Headers: " .. debug_info.headers .. "\n")
+    file:write("Body: " .. (response.body or "") .. "\n")
+    file:close()
+    vim.notify("Debug info written to " .. log_path, vim.log.levels.INFO, { title = "issues-neovim" })
+  end
+  
+  return debug_info
 end
 
 return M 

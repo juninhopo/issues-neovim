@@ -1,0 +1,11 @@
+:IssuesNeovim	issues_neovim.txt	/*:IssuesNeovim*
+:IssuesNeovimRefresh	issues_neovim.txt	/*:IssuesNeovimRefresh*
+issues_neovim-commands	issues_neovim.txt	/*issues_neovim-commands*
+issues_neovim-configuration	issues_neovim.txt	/*issues_neovim-configuration*
+issues_neovim-contents	issues_neovim.txt	/*issues_neovim-contents*
+issues_neovim-installation	issues_neovim.txt	/*issues_neovim-installation*
+issues_neovim-introduction	issues_neovim.txt	/*issues_neovim-introduction*
+issues_neovim-mappings	issues_neovim.txt	/*issues_neovim-mappings*
+issues_neovim-requirements	issues_neovim.txt	/*issues_neovim-requirements*
+issues_neovim-usage	issues_neovim.txt	/*issues_neovim-usage*
+issues_neovim.txt	issues_neovim.txt	/*issues_neovim.txt*

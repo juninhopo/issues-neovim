@@ -75,4 +75,65 @@ function M.setup(opts)
   end
 end
 
+-- Função de diagnóstico para testar a API do GitHub
+function M.diagnose_github_api()
+  local github = require("issues_neovim.github")
+  
+  -- Verificar configuração
+  vim.notify("Verificando configuração do GitHub...", vim.log.levels.INFO, { title = "issues-neovim" })
+  
+  -- Verificar token
+  if not config.github.token or config.github.token == "" then
+    vim.notify("Token do GitHub não configurado. Verificando alternativas...", vim.log.levels.WARN, { title = "issues-neovim" })
+    
+    -- Verificar variável de ambiente
+    local env_token = os.getenv("GITHUB_TOKEN")
+    if env_token and env_token ~= "" then
+      vim.notify("Token encontrado na variável GITHUB_TOKEN", vim.log.levels.INFO, { title = "issues-neovim" })
+    else
+      -- Verificar arquivo de token
+      local token_path = vim.fn.expand("~/.config/github_token")
+      local token_file = io.open(token_path)
+      if token_file then
+        vim.notify("Token encontrado no arquivo " .. token_path, vim.log.levels.INFO, { title = "issues-neovim" })
+        token_file:close()
+      else
+        vim.notify("ERRO: Token do GitHub não encontrado. Configure um token para usar a API.", vim.log.levels.ERROR, { title = "issues-neovim" })
+      end
+    end
+  else
+    vim.notify("Token do GitHub configurado.", vim.log.levels.INFO, { title = "issues-neovim" })
+  end
+  
+  -- Verificar informações do repositório
+  local owner, repo = github.get_current_repo()
+  if not owner or not repo then
+    vim.notify("ERRO: Não foi possível determinar o repositório atual. Está em um repositório Git?", vim.log.levels.ERROR, { title = "issues-neovim" })
+    return
+  else
+    vim.notify("Repositório atual: " .. owner .. "/" .. repo, vim.log.levels.INFO, { title = "issues-neovim" })
+  end
+  
+  -- Construir URL da API
+  local api_url = github.build_api_url("/issues?state=all")
+  if not api_url then
+    vim.notify("ERRO: Não foi possível construir a URL da API", vim.log.levels.ERROR, { title = "issues-neovim" })
+    return
+  else
+    vim.notify("URL da API: " .. api_url, vim.log.levels.INFO, { title = "issues-neovim" })
+  end
+  
+  -- Testar a API
+  vim.notify("Fazendo requisição à API do GitHub...", vim.log.levels.INFO, { title = "issues-neovim" })
+  local issues = github.get_issues(true)
+  
+  if issues then
+    vim.notify("Sucesso! Encontrado " .. #issues .. " issues.", vim.log.levels.INFO, { title = "issues-neovim" })
+    return true
+  else
+    vim.notify("Falha ao obter issues. Verifique o arquivo de log para mais detalhes.", vim.log.levels.ERROR, { title = "issues-neovim" })
+    return false
+  end
+end
+
 return M 
