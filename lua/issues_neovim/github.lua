@@ -195,7 +195,8 @@ function M.get_issues(force_refresh)
     return M.cache.issues
   end
   
-  local api_url = M.build_api_url("/issues?state=all")
+  -- Add 'pulls=false' parameter to exclude pull requests
+  local api_url = M.build_api_url("/issues?state=all&pulls=false")
   if not api_url then
     vim.notify(
       "Could not determine repository information",
@@ -207,8 +208,15 @@ function M.get_issues(force_refresh)
   
   local issues = M.api_request(api_url)
   if issues then
-    M.cache.issues = issues
-    return issues
+    -- Filter out pull requests that might still come through
+    local filtered_issues = {}
+    for _, issue in ipairs(issues) do
+      if not issue.pull_request then
+        table.insert(filtered_issues, issue)
+      end
+    end
+    M.cache.issues = filtered_issues
+    return filtered_issues
   end
   
   return nil
