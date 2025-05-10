@@ -111,9 +111,9 @@ end
 ---@return string
 function M.colorize_state(state)
   if state == "open" then
-    return "%#DiagnosticInfo#OPEN%*"
+    return "OPEN "
   elseif state == "closed" then
-    return "%#DiagnosticError#CLOSED%*"
+    return "CLOSED"
   else
     return state
   end

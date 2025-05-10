@@ -247,55 +247,95 @@ function M.render_issues()
   local namespace = api.nvim_create_namespace("issues_neovim")
   api.nvim_buf_clear_namespace(M.state.bufnr, namespace, 0, -1)
   
-  -- Tamanho total da tabela
-  local total_width = 1920 -- default width of the terminal
+  -- Calculate window width dynamically
+  local window_width = api.nvim_win_get_width(M.state.winid)
+  
+  -- Calculate column widths based on percentage of window width
+  local col_widths = {
+    number = math.min(10, math.max(4, math.floor(window_width * 0.05))),  -- 5% for issue number (max 10)
+    state = math.min(15, math.max(10, math.floor(window_width * 0.12))),  -- 12% for state (max 15)
+    title = math.min(80, math.max(20, math.floor(window_width * 0.55))),  -- 55% for title (max 80)
+    created = math.min(15, math.max(10, math.floor(window_width * 0.15))), -- 15% for created date (max 15)
+    comments = math.min(10, math.max(8, math.floor(window_width * 0.08))) -- 8% for comments count (max 10)
+  }
+  
+  -- Calculate extra space needed for highlight syntax in state column
+  -- %#DiagnosticInfo# and %#Normal# adds extra characters that don't display
+  local highlight_syntax_len = #"%#DiagnosticError#" + #"%#Normal#"
+  
+  -- Adjust state width to account for highlight syntax (ensure it's at least 10)
+  col_widths.effective_state = math.max(10, col_widths.state - highlight_syntax_len)
+  
+  -- Calculate total width for separators
+  local separators_width = 10 -- 5 separators (4 visible + 1 at end)
+  local total_width = math.min(window_width, 130) - separators_width  -- Limit total width to 130
+  
+  -- Adjust title width to fill available space if needed
+  local used_width = col_widths.number + col_widths.state + col_widths.created + col_widths.comments
+  if used_width < total_width then
+    col_widths.title = total_width - used_width
+  end
+  
+  -- Create format strings
+  local format_string = "%-" .. col_widths.number .. "s | %s | %-" .. col_widths.title .. "s | %-" .. col_widths.created .. "s | %-" .. col_widths.comments .. "s"
   
   -- Inserir título
   table.insert(lines, "GitHub Issues: " .. github.cache.owner .. "/" .. github.cache.repository)
-  table.insert(lines, string.rep("─", total_width))
+  table.insert(lines, string.rep("─", window_width))
   
   -- Cabeçalho da tabela com espaçamento correto
-  local header_format = "%-4s | %-25s | %-50s | %-10s | %-10s"
+  local header_padding_size = math.max(0, col_widths.effective_state - 5) -- "State" is 5 characters
+  local state_header = "State" .. string.rep(" ", header_padding_size)
   local header = string.format(
-    header_format,
+    format_string,
     "#",
-    "State",
+    state_header,
     "Title",
     "Created",
     "Comments"
   )
   table.insert(lines, header)
-  table.insert(lines, string.rep("─", total_width))
+  table.insert(lines, string.rep("─", window_width))
   
   if not M.state.issues or #M.state.issues == 0 then
     table.insert(lines, "No issues found.")
   else
     -- Add issues
     for i, issue in ipairs(M.state.issues) do
-      local issue_number = string.format("%-4d", issue.number)
+      local issue_number = string.format("%-" .. col_widths.number .. "d", issue.number)
       
       -- Estado colorido e com largura consistente
       local state
+      local state_text
       if issue.state == "open" then
-        state = "%#DiagnosticInfo#OPEN%#Normal#"
+        state_text = "OPEN"
+        state = "OPEN"
       else
-        state = "%#DiagnosticError#CLOSED%#Normal#"
+        state_text = "CLOSED"
+        state = "CLOSED"
       end
       
-      -- Título com largura fixa
-      local title = utils.truncate(issue.title, 48)
-      title = string.format("%-50s", title)
+      -- Padding para manter o alinhamento consistente
+      -- Calculamos baseado na largura efetiva (já considerando tags de highlight)
+      local display_width = col_widths.effective_state
+      local padding_size = math.max(0, display_width - #state_text)
+      local padding = string.rep(" ", padding_size)
+      state = state .. padding
       
-      -- Data formatada com largura fixa
+      -- Título com largura variável baseada no tamanho da janela
+      local title = utils.truncate(issue.title, col_widths.title - 2) -- -2 for safety
+      title = string.format("%-" .. col_widths.title .. "s", title)
+      
+      -- Data formatada com largura dinâmica
       local created = utils.format_date(issue.created_at)
-      created = string.format("%-10s", created)
+      created = string.format("%-" .. col_widths.created .. "s", created)
       
       -- Comentários
-      local comments = string.format("%-10s", tostring(issue.comments or 0))
+      local comments = string.format("%-" .. col_widths.comments .. "s", tostring(issue.comments or 0))
       
       -- Formatar linha inteira
       local line = string.format(
-        "%-4s | %-25s | %-50s | %-10s | %-10s", 
+        format_string, 
         issue_number,
         state, 
         title, 
