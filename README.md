@@ -10,9 +10,9 @@ A Neovim plugin to view and manage GitHub issues directly from your editor. This
 
 | Features                          | Done               |
 | --------------------------------- | ------------------ |
-| List issues on Public Repository  | :heavy_check_mark: |
+| List issues on Public Repository  | ✅                 |
 | List Issues on Private Repository | :x:                |
-| Details Issue                     | :heavy_check_mark: |
+| Details Issue                     | ✅                 |
 | Create Issue                      | :x:                |
 | Close Issue                       | :x:                |
 | Re-open Issue                     | :x:                |
