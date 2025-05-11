@@ -32,7 +32,8 @@ A Neovim plugin to view and manage GitHub issues directly from your editor. This
 {
   "juninhopo/issues-neovim",
   dependencies = {
-    "nvim-lua/plenary.nvim"
+    "nvim-lua/plenary.nvim",
+    "voldikss/vim-floaterm"
   },
   dev = false, -- Garantir que não está em modo de desenvolvimento
   pin = false, -- Não fixar versão
