@@ -11,12 +11,12 @@ A Neovim plugin to view and manage GitHub issues directly from your editor. This
 | Features                          | Done               |
 | --------------------------------- | ------------------ |
 | List issues on Public Repository  | ✅                 |
-| List Issues on Private Repository | :x:                |
+| List Issues on Private Repository | ❌                 |
 | Details Issue                     | ✅                 |
-| Create Issue                      | :x:                |
-| Close Issue                       | :x:                |
-| Re-open Issue                     | :x:                |
-| Comment Issue                     | :x:                |
+| Create Issue                      | ❌                 |
+| Close Issue                       | ❌                 |
+| Re-open Issue                     | ❌                 |
+| Comment Issue                     | ❌                 |
 
 ## Requirements
 
