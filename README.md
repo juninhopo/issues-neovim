@@ -5,7 +5,6 @@ A Neovim plugin to view and manage GitHub issues directly from your editor. This
 ![Screenshot 2025-05-10 at 03 57 48](https://github.com/user-attachments/assets/6e8a84bf-808c-4e38-b760-e1416960faa7)
 ![Screenshot 2025-05-10 at 03 58 41](https://github.com/user-attachments/assets/60644310-56ad-4e2a-a5b6-e283d5b95bdd)
 
-
 ## Features
 
 | Features                          | Done               |
@@ -100,6 +99,7 @@ return {
 For private repositories or better rate limits, a GitHub token is recommended. The plugin will look for a token in the following order:
 
 1. Token set directly in configuration:
+
    ```lua
    require("issues_neovim").setup({
      github = {
@@ -109,13 +109,14 @@ For private repositories or better rate limits, a GitHub token is recommended. T
    ```
 
 2. Environment variable `GITHUB_TOKEN` in your shell (e.g., in `.zshrc`):
+
    ```bash
    export GITHUB_TOKEN="your-github-token"
    ```
 
 3. Token stored in file `~/.config/github_token`
 
-To create a GitHub token, visit: https://github.com/settings/tokens
+To create a GitHub token, visit: <https://github.com/settings/tokens>
 For basic repository access, the `repo` scope should be sufficient.
 
 ## Usage
